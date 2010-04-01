@@ -716,12 +716,7 @@ func (i *Interp) bindArgs(vnames []argsig, args []*TclObj) os.Error {
 	return nil
 }
 
-
-func makeProc(name string, sig []*TclObj, body *TclObj) TclCmd {
-	cmds, ce := body.AsCmds()
-	if ce != nil {
-		return func(i *Interp, args []*TclObj) TclStatus { return i.Fail(ce) }
-	}
+func makeArgSigs(sig []*TclObj) []argsig {
 	sigs := make([]argsig, len(sig))
 	for i, a := range sig {
 		sl, lerr := a.AsList()
@@ -731,6 +726,15 @@ func makeProc(name string, sig []*TclObj, body *TclObj) TclCmd {
 			sigs[i] = argsig{name: a.AsString()}
 		}
 	}
+	return sigs
+}
+
+func makeProc(sig []*TclObj, body *TclObj) TclCmd {
+	cmds, ce := body.AsCmds()
+	if ce != nil {
+		return func(i *Interp, args []*TclObj) TclStatus { return i.Fail(ce) }
+	}
+	sigs := makeArgSigs(sig)
 	return func(i *Interp, args []*TclObj) TclStatus {
 		i.frame = newstackframe(i.frame)
 		if be := i.bindArgs(sigs, args); be != nil {
@@ -750,13 +754,11 @@ func tclProc(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 3 {
 		return i.FailStr("wrong # args")
 	}
-	name := args[0].AsString()
 	sig, err := args[1].AsList()
 	if err != nil {
 		return i.Fail(err)
 	}
-	body := args[2]
-	i.SetCmd(name, makeProc(name, sig, body))
+	i.SetCmd(args[0].AsString(), makeProc(sig, args[2]))
 	return i.Return(kNil)
 }
 

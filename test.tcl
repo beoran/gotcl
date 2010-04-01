@@ -318,6 +318,12 @@ test {rename to delete} {
     assert [lsearch [info commands] fizzlebuggy] == -1
 }
 
+test {apply} {
+    assert [apply {{x} { incr x }} 4] == 5
+    assert [apply {{x} { return [- $x 1] }} 4] == 3
+    assert [apply {{} { return 99 }}] == 99
+}
+
 proc fib {n} {
     if { < $n 2 } {
         return 1

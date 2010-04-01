@@ -647,6 +647,24 @@ func tclRename(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(kNil)
 }
 
+func tclApply(i *Interp, args []*TclObj) TclStatus {
+	if len(args) < 1 {
+		return i.FailStr("wrong # args")
+	}
+	lambda, e := args[0].AsList()
+	if e != nil {
+		return i.Fail(e)
+	}
+	if len(lambda) != 2 {
+		return i.FailStr("invalid lambda")
+	}
+	sig, se := lambda[0].AsList()
+	if se != nil {
+		return i.Fail(se)
+	}
+	return makeProc(sig, lambda[1])(i, args[1:])
+}
+
 var tclBasicCmds = map[string]TclCmd{
 	"set":      tclSet,
 	"if":       tclIf,
@@ -683,5 +701,6 @@ var tclBasicCmds = map[string]TclCmd{
 	"string":   tclString,
 	"split":    tclSplit,
 	"source":   tclSource,
+	"apply":    tclApply,
 	"rename":   tclRename,
 }
