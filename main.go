@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"consalus/gotcl"
+	"gotcl"
 	"flag"
 	"fmt"
 	"io"

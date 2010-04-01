@@ -1,5 +1,5 @@
 include $(GOROOT)/src/Make.$(GOARCH)
-TARG=consalus/gotcl
+TARG=gotcl
 GOFILES=\
         gotcl.go\
         commands.go\
