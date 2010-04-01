@@ -8,6 +8,11 @@ proc foo {x} {
 assert [foo 3] == 6 "globals unused"
 assert $x == 12 "locals unchanged"
 
+test {same line} {
+    set x 0
+    incr x;incr x;  incr x   ; incr x
+    assert $x == 4
+}
 
 test {set test} {
     assert [set x 4] == 4
@@ -364,11 +369,11 @@ proc sum_to {n} {
 
 puts \n
 if { == 1 0 } {
-puts "\n----Benchmarks----"
+    puts "\n----Benchmarks----"
 
-bench { fib 17 }
-bench { fib2 70 }
-bench { sum_to 20000 }
-bench { iota 10000 } 
-bench { sum [iota 10000] }
+    bench { fib 17 }
+    bench { fib2 70 }
+    bench { sum_to 20000 }
+    bench { iota 10000 } 
+    bench { sum [iota 10000] }
 }

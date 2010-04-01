@@ -408,8 +408,8 @@ func appendcmd(tx *[]Command, t Command) {
 }
 
 func (p *parser) parseCommands() []Command {
-	p.eatWhile(isspace)
 	res := make([]Command, 0, 32)
+	p.eatWhile(isspace)
 	for p.ch != -1 {
 		if p.ch == '#' {
 			p.parseComment()
