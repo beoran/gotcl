@@ -186,7 +186,7 @@ func (p *parser) parseBlockData() string {
 		}
 		p.tmpbuf.WriteRune(p.advance())
 	}
-	panic("unreachable")
+	return "" // never happens.
 }
 
 func (p *parser) parseBlock() *block { return &block{strval: p.parseBlockData()} }
@@ -886,6 +886,10 @@ func (i *Interp) evalCmd(cmd Command) TclStatus {
 		return f(i, args[1:])
 	}
 	return i.FailStr("command not found: " + fname)
+}
+
+func (i *Interp) EvalString(s string) (*TclObj, os.Error) {
+    return i.Run(strings.NewReader(s))
 }
 
 func (i *Interp) Run(in io.Reader) (*TclObj, os.Error) {
