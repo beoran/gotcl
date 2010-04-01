@@ -814,8 +814,12 @@ func (i *Interp) GetVarMap(global bool) VarMap {
 	return f.vars
 }
 
-func (i *Interp) LinkVar(theirs, mine string) {
-	theirf := i.frame.up()
+func (i *Interp) LinkVar(level int, theirs, mine string) {
+	theirf := i.frame
+	for level > 0 {
+		theirf = theirf.up()
+		level--
+	}
 	m := i.GetVarMap(false)
 	m[mine] = varEntry{link: &framelink{theirf, theirs}}
 }
@@ -889,7 +893,7 @@ func (i *Interp) evalCmd(cmd Command) TclStatus {
 }
 
 func (i *Interp) EvalString(s string) (*TclObj, os.Error) {
-    return i.Run(strings.NewReader(s))
+	return i.Run(strings.NewReader(s))
 }
 
 func (i *Interp) Run(in io.Reader) (*TclObj, os.Error) {

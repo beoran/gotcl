@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"runtime"
-	"strings"
 )
 
 var nogc *bool = flag.Bool("nogc", false, "if true, gc is disabled")
@@ -42,7 +41,7 @@ func RunTclRepl(in io.Reader, out io.Writer) {
 	i := gotcl.NewInterp()
 	setArgs(i, os.Args, true)
 	RunRepl(in, out, func(ln string) (string, os.Error) {
-		res, e := i.Run(strings.NewReader(ln))
+		res, e := i.EvalString(ln)
 		i.ClearError()
 		if e != nil {
 			return "", e

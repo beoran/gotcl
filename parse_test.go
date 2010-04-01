@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 )
 
-
 func TestListParse(t *testing.T) {
 	s := FromStr("{x}")
 	ll, e := s.AsList()
@@ -69,7 +68,10 @@ func BenchmarkListParsing(b *testing.B) {
 	}
 }
 
-func BenchmarkDoNothing(b *testing.B) {
+// Loads same file as above benchmarks, but just counts
+// newlines. This is to see how much of the time is spent
+// actually parsing vs just reading runes.
+func BenchmarkNoopParse(b *testing.B) {
 	b.StopTimer()
 	data, err := ioutil.ReadFile("parsebench.tcl")
 	if err != nil {

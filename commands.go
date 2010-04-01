@@ -40,9 +40,21 @@ func tclUplevel(i *Interp, args []*TclObj) TclStatus {
 }
 
 func tclUpvar(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 2 && len(args) != 3 {
+		return i.FailStr("wrong # args")
+	}
+	level := 1
+	if len(args) == 3 {
+		ll, e := args[0].AsInt()
+		if e != nil {
+			return i.Fail(e)
+		}
+		level = ll
+		args = args[1:]
+	}
 	oldn := args[0].AsString()
 	newn := args[1].AsString()
-	i.LinkVar(oldn, newn)
+	i.LinkVar(level, oldn, newn)
 	return i.Return(kNil)
 }
 

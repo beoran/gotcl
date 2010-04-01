@@ -208,6 +208,20 @@ test {upvar multi} {
     assert $x == 2
 }
 
+test {double upvar} {
+    proc proc2 {} {
+        upvar 2 foo zz
+        incr zz 2
+    }
+    proc proc1 {} {
+        proc2
+    }
+
+    set foo 0
+    proc1
+    assert $foo == 2
+}
+
 test {default arg} {
     proc foo { { x 1 }  { y 0 } } {
         return [+ $x $y]
