@@ -69,6 +69,9 @@ func tclRecvChan(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("not a chan: " + name)
 	}
 	v := <-ch
+    if v == nil {
+        v = kNil
+    }
 	return i.Return(v)
 }
 

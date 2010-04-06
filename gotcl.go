@@ -6,21 +6,18 @@ import (
 	"io"
 	"os"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 )
 
 type parser struct {
-	data    *bufio.Reader
-	tmpbuf  *bytes.Buffer
-	errchan chan os.Error
-	ch      int
+	data   *bufio.Reader
+	tmpbuf *bytes.Buffer
+	ch     int
 }
 
 func newParser(input io.Reader) *parser {
-	p := &parser{data: bufio.NewReader(input), errchan: make(chan os.Error)}
-	p.tmpbuf = bytes.NewBuffer(make([]byte, 0, 1024))
+	p := &parser{data: bufio.NewReader(input), tmpbuf: bytes.NewBuffer(make([]byte, 0, 1024))}
 	p.advance()
 	return p
 }
@@ -36,8 +33,7 @@ func isword(c int) bool {
 }
 
 func (p *parser) fail(s string) {
-	p.errchan <- os.NewError(s)
-	runtime.Goexit()
+	panic(os.NewError(s))
 }
 
 func (p *parser) advance() (result int) {
@@ -482,26 +478,24 @@ func (p *parser) parseToken() TclTok {
 	return p.parseSimpleWord()
 }
 
-func ParseList(in io.Reader) ([]TclTok, os.Error) {
-	p := newParser(in)
-	var items []TclTok
-	go func() {
-		items = p.parseList()
-		p.errchan <- nil
-	}()
-	e := <-p.errchan
-	return items, e
+func setError(err *os.Error) {
+	if e := recover(); e != nil {
+		*err = e.(os.Error)
+	}
 }
 
-func ParseCommands(in io.Reader) ([]Command, os.Error) {
+func ParseList(in io.Reader) (items []TclTok, err os.Error) {
 	p := newParser(in)
-	var cmds []Command
-	go func() {
-		cmds = p.parseCommands()
-		p.errchan <- nil
-	}()
-	e := <-p.errchan
-	return cmds, e
+	defer setError(&err)
+	items = p.parseList()
+	return
+}
+
+func ParseCommands(in io.Reader) (cmds []Command, err os.Error) {
+	p := newParser(in)
+	defer setError(&err)
+	cmds = p.parseCommands()
+	return
 }
 
 type TclStatus int

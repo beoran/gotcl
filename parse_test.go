@@ -17,6 +17,12 @@ func TestListParse(t *testing.T) {
 	if len(ll) != 1 {
 		t.Fatalf("len({x}) should be 1, was %#v", ll)
 	}
+
+	s2 := FromStr("a \" b")
+	_, e2 := s2.AsList()
+	if e2 == nil {
+		t.Fatal("Should have gotten an error.")
+	}
 }
 
 func verifyParse(t *testing.T, code string) {
