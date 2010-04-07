@@ -248,50 +248,47 @@ func tclNot(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(FromBool(!args[0].AsBool()))
 }
 
-func lessThan(i *Interp, args []*TclObj) TclStatus {
-	a, ae := args[0].AsInt()
-	if ae != nil {
-		return i.Fail(ae)
+func cmpcmd(fn func(*TclObj, *TclObj) bool) TclCmd {
+	return func(i *Interp, args []*TclObj) TclStatus {
+		if len(args) != 2 {
+			return i.FailStr("wrong # args")
+		}
+		return i.Return(FromBool(fn(args[0], args[1])))
 	}
-	b, be := args[1].AsInt()
-	if be != nil {
-		return i.Fail(be)
-	}
-	return i.Return(FromBool(a < b))
 }
 
-func greaterThan(i *Interp, args []*TclObj) TclStatus {
-	a, ae := args[0].AsInt()
-	if ae != nil {
-		return i.Fail(ae)
+var tclOr = cmpcmd(func(a, b *TclObj) bool { return a.AsBool() || b.AsBool() })
+var tclAnd = cmpcmd(func(a, b *TclObj) bool { return a.AsBool() && b.AsBool() })
+var equalTo = cmpcmd(func(a, b *TclObj) bool { return a.AsString() == b.AsString() })
+var notEqualTo = cmpcmd(func(a, b *TclObj) bool { return a.AsString() != b.AsString() })
+
+func intcmpcmd(fn func(int, int) bool) TclCmd {
+	return func(i *Interp, args []*TclObj) TclStatus {
+		if len(args) != 2 {
+			return i.FailStr("wrong # args")
+		}
+		a, ae := args[0].AsInt()
+		if ae != nil {
+			return i.Fail(ae)
+		}
+		b, be := args[1].AsInt()
+		if be != nil {
+			return i.Fail(be)
+		}
+		return i.Return(FromBool(fn(a, b)))
 	}
-	b, be := args[1].AsInt()
-	if be != nil {
-		return i.Fail(be)
-	}
-	return i.Return(FromBool(a > b))
 }
 
-func lessThanEq(i *Interp, args []*TclObj) TclStatus {
-	a, ae := args[0].AsInt()
-	if ae != nil {
-		return i.Fail(ae)
-	}
-	b, be := args[1].AsInt()
-	if be != nil {
-		return i.Fail(be)
-	}
-	return i.Return(FromBool(a <= b))
-}
+var lessThan = intcmpcmd(func(a, b int) bool { return a < b })
+var lessThanEq = intcmpcmd(func(a, b int) bool { return a <= b })
+var greaterThan = intcmpcmd(func(a, b int) bool { return a > b })
+var greaterThanEq = intcmpcmd(func(a, b int) bool { return a >= b })
 
-func equalTo(i *Interp, args []*TclObj) TclStatus {
-	if len(args) != 2 {
-		return i.FailStr("wrong # args")
-	}
-	return i.Return(FromBool(args[0].AsString() == args[1].AsString()))
-}
 
 func tclLlength(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 1 {
+		return i.FailStr("wrong # args")
+	}
 	l, err := args[0].AsList()
 	if err != nil {
 		return i.Fail(err)
@@ -685,8 +682,12 @@ var tclBasicCmds = map[string]TclCmd{
 	"*":        times,
 	"<":        lessThan,
 	">":        greaterThan,
+	">=":       greaterThanEq,
 	"<=":       lessThanEq,
 	"==":       equalTo,
+	"!=":       notEqualTo,
+	"||":       tclOr,
+	"&&":       tclAnd,
 	"!":        tclNot,
 	"unset":    tclUnset,
 	"list":     tclList,
