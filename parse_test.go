@@ -1,11 +1,11 @@
 package gotcl
 
 import (
-	"strings"
-	"testing"
 	"bufio"
 	"bytes"
 	"io/ioutil"
+	"strings"
+	"testing"
 )
 
 func TestListParse(t *testing.T) {
@@ -28,7 +28,7 @@ func TestListParse(t *testing.T) {
 func verifyParse(t *testing.T, code string) {
 	_, e := ParseCommands(strings.NewReader(code))
 	if e != nil {
-		t.Fatalf("%#v should parse, but got %#v", code, e.String())
+		t.Fatalf("%v should parse, but got %#v", code, e.String())
 	}
 }
 
@@ -38,6 +38,69 @@ func TestCommandParsing(t *testing.T) {
 	verifyParse(t, `set x []`)
 	verifyParse(t, `set x  [  ]`)
 	verifyParse(t, `set x "foo[]bar"`)
+}
+
+func testExpr(t *testing.T, vvals map[string]string, et exprtest) {
+	s := et.code
+	exp, e := ParseExpr(strings.NewReader(s))
+	if e != nil {
+		t.Errorf("%#v → %v\n", s, e)
+	} else {
+		i := NewInterp()
+		for k, v := range vvals {
+			i.SetVarRaw(k, FromStr(v))
+		}
+		v := exp.Eval(i)
+		if i.err != nil {
+			t.Errorf("Expected %s, got %v\n", et.result, i.err)
+		} else if v.AsString() != et.result {
+			t.Errorf("%s: Expected %s, got %#v (%s)\n", s, et.result, v.AsString(), exp.String())
+		} else {
+			// everything is ok
+		}
+	}
+}
+
+type exprtest struct {
+	code, result string
+}
+
+func TestExprParse(t *testing.T) {
+	cases := []exprtest{
+		exprtest{"4 + 5", "9"},
+		exprtest{"22", "22"},
+		exprtest{"$foo", "42"},
+		exprtest{"$foo - 42", "0"},
+		exprtest{"44 + (4 + 5)", "53"},
+		exprtest{"4 * 1 * 4 + 2 * 1 * 2", "20"},
+		exprtest{"44 * 4 + 5", "181"},
+		exprtest{"4 - 5 * 2 - 1", "-7"},
+		exprtest{"3 - 2 - 1", "0"},
+		exprtest{"1 + 2 + 3", "6"},
+		exprtest{"1 + 1 * 2", "3"},
+		exprtest{"(1 + 1) * 2", "4"},
+		exprtest{"(1 + 1) * (1+1)", "4"},
+		exprtest{"33 + 11 == 44", "1"},
+		exprtest{"!0", "1"},
+		exprtest{"!1", "0"},
+		exprtest{"!1 == !0", "0"},
+		exprtest{"!(1 == 0)", "1"},
+		exprtest{"!(1 == 0)", "1"},
+		exprtest{"[+ 1 1] == 2", "1"},
+		exprtest{"1 || 0", "1"},
+		exprtest{"1 && 0", "0"},
+		exprtest{"1 == 1 && 0 == 0", "1"},
+		exprtest{"1 || 1 && 0 || 0", "1"},
+		exprtest{"1 <= 2", "1"},
+		exprtest{"$foo >= 109", "0"},
+		exprtest{"$foo != 42", "0"},
+		exprtest{"-3 * -3", "9"},
+		exprtest{"1 == 2 && 1", "0"},
+	}
+	varvals := map[string]string{"foo": "42"}
+	for _, c := range cases {
+		testExpr(t, varvals, c)
+	}
 }
 
 func BenchmarkParsing(b *testing.B) {
