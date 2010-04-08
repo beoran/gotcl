@@ -704,4 +704,5 @@ var tclBasicCmds = map[string]TclCmd{
 	"source":   tclSource,
 	"apply":    tclApply,
 	"rename":   tclRename,
+	"expr":     tclExpr,
 }

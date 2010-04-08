@@ -38,6 +38,7 @@ func TestCommandParsing(t *testing.T) {
 	verifyParse(t, `set x []`)
 	verifyParse(t, `set x  [  ]`)
 	verifyParse(t, `set x "foo[]bar"`)
+    verifyParse(t, `set x{}x foo`)
 }
 
 func testExpr(t *testing.T, vvals map[string]string, et exprtest) {

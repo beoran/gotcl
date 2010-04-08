@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"unicode"
 	"os"
 	"reflect"
 	"strconv"
@@ -24,9 +25,12 @@ func newParser(input io.Reader) *parser {
 
 func isspace(c int) bool    { return c == ' ' || c == '\n' || c == '\t' || c == '\r' }
 func issepspace(c int) bool { return c == '\t' || c == ' ' }
+func isvarword(c int) bool {
+	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
+}
 func isword(c int) bool {
 	switch c {
-	case '{', '}', '[', ']', ';', '$', '"', '(', ')':
+	case '[', ']', ';', '$', '"':
 		return false
 	}
 	return !isspace(c)
@@ -226,7 +230,7 @@ func (p *parser) parseVarRef() varRef {
 		p.consumeRune(':')
 		global = true
 	}
-	return varRef{is_global: global, name: p.consumeWhile1(isword, "variable name")}
+	return varRef{is_global: global, name: p.consumeWhile1(isvarword, "variable name")}
 }
 
 type varRef struct {

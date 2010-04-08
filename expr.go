@@ -4,6 +4,7 @@ import (
 	"os"
 	"io"
 	"unicode"
+	"strings"
 )
 
 type eterm interface {
@@ -191,7 +192,7 @@ func (p *parser) parseOp() string {
 	case -1:
 		p.fail("EOF")
 	}
-	p.fail("expected operand")
+	p.fail("expected operand, got " + string(p.ch))
 	return ""
 }
 
@@ -205,4 +206,20 @@ func (p *parser) parseBinOp(a eterm) eterm {
 	op := p.parseOp()
 	p.eatWhile(isspace)
 	return balance(&binop{op, a, p.parseExpr()})
+}
+
+func tclExpr(i *Interp, args []*TclObj) TclStatus {
+	if len(args) == 0 {
+		return i.FailStr("wrong # args")
+	}
+	str := concat(args).AsString()
+	expr, err := ParseExpr(strings.NewReader(str))
+	if err != nil {
+		return i.Fail(err)
+	}
+	v := expr.Eval(i)
+	if i.err != nil {
+		return kTclErr
+	}
+	return i.Return(v)
 }

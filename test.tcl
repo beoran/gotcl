@@ -125,6 +125,13 @@ test {nested list parse} {
     assert [llength [lindex $x 2]] == 2
 }
 
+test {weird parse} {
+    set x(x 44
+    assert ${x(x} == 44
+    set y{}y 12
+    # assert $y{}y == 12
+}
+
 test {list with empties} {
     set x [list {} {} {}]
     assert $x == {{} {} {}}
@@ -322,6 +329,20 @@ test {apply} {
     assert [apply {{x} { incr x }} 4] == 5
     assert [apply {{x} { return [- $x 1] }} 4] == 3
     assert [apply {{} { return 99 }}] == 99
+}
+
+test {expr} {
+    assert [expr 1 + 1] == 2
+    assert [expr "1 + 1"] == 2
+    assert [expr "1 +" 1] == 2
+    assert [expr {1 + 1}] == 2
+    set x 10
+    assert [expr { $x + $x }] == 20
+    assert [expr { 2 * $x }] == 20
+    assert [expr { $x - -4 }] == 14
+    set y 2
+    assert [expr { ($y*$y) + $y }] == 6
+    assert [expr {$y*$y}] == 4
 }
 
 proc fib {n} {
