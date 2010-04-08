@@ -87,6 +87,7 @@ func tclIncr(i *Interp, args []*TclObj) TclStatus {
 
 func tclReturn(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
+        i.retval = kNil
 		return kTclReturn
 	} else if len(args) == 1 {
 		i.retval = args[0]

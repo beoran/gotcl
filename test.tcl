@@ -59,6 +59,14 @@ test {incr return} {
     assert [incr x] == 6
 }
 
+test {return in string} {
+    proc somereturn {} {
+        set x "foo [return ok]"
+        return failed
+    }
+    assert [somereturn] == ok 
+}
+
 test for_test {
     set res 0
     for { set x 0 } { < $x 10 } { incr x } {

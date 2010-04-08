@@ -213,7 +213,7 @@ func (t strlit) String() string {
 func (t strlit) Eval(i *Interp) *TclObj {
 	res := bytes.NewBufferString("")
 	for _, tok := range t.toks {
-		res.WriteString(tok.Eval(i))
+		res.WriteString(tok.EvalStr(i))
 	}
 	return fromStr(res.String())
 }
@@ -296,7 +296,7 @@ type littok struct {
 	subcmd *subcommand
 }
 
-func (lt *littok) Eval(i *Interp) string {
+func (lt *littok) EvalStr(i *Interp) string {
 	switch lt.kind {
 	case kRaw:
 		return lt.value
