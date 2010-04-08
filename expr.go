@@ -48,7 +48,7 @@ func (p *parens) String() string {
 }
 
 
-func Call(i *Interp, name string, args ...*TclObj) *TclObj {
+func callCmd(i *Interp, name string, args ...*TclObj) *TclObj {
 	c := i.cmds[name]
 	if c == nil {
 		i.err = os.NewError("Not a command: " + name)
@@ -64,7 +64,7 @@ func (bb *binop) Eval(i *Interp) *TclObj {
 	if i.err != nil {
 		return nil
 	}
-	return Call(i, bb.op, a, b)
+	return callCmd(i, bb.op, a, b)
 }
 
 func (bb *binop) String() string {
@@ -79,7 +79,11 @@ func gbalance(b eterm) eterm {
 	return b
 }
 
-var oplevel = map[string]int{"*": 3, "/": 3, "+": 2, "-": 2, "==": 1, "&&": 0, "||": 0}
+var oplevel = map[string]int{
+	"*": 3, "/": 3,
+	"+": 2, "-": 2,
+	"==": 1, "!=": 1,
+	"&&": 0, "||": 0}
 
 func opgt(a, b string) bool {
 	al, aok := oplevel[a]

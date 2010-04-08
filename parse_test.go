@@ -79,6 +79,8 @@ func TestExprParse(t *testing.T) {
 		exprtest{"1 + 2 + 3", "6"},
 		exprtest{"1 + 1 * 2", "3"},
 		exprtest{"(1 + 1) * 2", "4"},
+		exprtest{"1 + (2 * 1 + 2)", "5"},
+		exprtest{"1 + (2 + 1 * 2)", "5"},
 		exprtest{"(1 + 1) * (1+1)", "4"},
 		exprtest{"33 + 11 == 44", "1"},
 		exprtest{"!0", "1"},
