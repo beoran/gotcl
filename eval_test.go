@@ -96,15 +96,15 @@ proc sum_to {n} {
 }
 
 func Benchmark_SumIota(b *testing.B) {
-    code := `
+	code := `
 proc iota {n} {
     set result [list]
     for {set i 1} { $i <= $n } { incr i } {
-       lappend result $i        
+       lappend result $i
     }
     return $result
 }
- 
+
 proc sum {lst} {
     set result 0
     foreach x $lst {
@@ -112,5 +112,5 @@ proc sum {lst} {
     }
     return $result
 }`
-    runCmd(code, "sum [iota 10000]", b)
+	runCmd(code, "sum [iota 10000]", b)
 }

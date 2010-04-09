@@ -38,7 +38,7 @@ func TestCommandParsing(t *testing.T) {
 	verifyParse(t, `set x []`)
 	verifyParse(t, `set x  [  ]`)
 	verifyParse(t, `set x "foo[]bar"`)
-    verifyParse(t, `set x{}x foo`)
+	verifyParse(t, `set x{}x foo`)
 }
 
 func testExpr(t *testing.T, vvals map[string]string, et exprtest) {
@@ -52,7 +52,7 @@ func testExpr(t *testing.T, vvals map[string]string, et exprtest) {
 			i.SetVarRaw(k, FromStr(v))
 		}
 		exp.Eval(i)
-        v := i.retval
+		v := i.retval
 		if i.err != nil {
 			t.Errorf("Expected %s, got %v\n", et.result, i.err)
 		} else if v.AsString() != et.result {

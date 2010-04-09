@@ -333,6 +333,14 @@ test {rename to delete} {
     assert [lsearch [info commands] fizzlebuggy] == -1
 }
 
+test {if (true|false|no)} {
+    set x boo
+    if true { set x ok }
+    if false then { set x fail }
+    if no then { set x fail }
+    assert $x == ok
+}
+
 test {apply} {
     assert [apply {{x} { incr x }} 4] == 5
     assert [apply {{x} { return [- $x 1] }} 4] == 3

@@ -7,7 +7,7 @@ proc assert { a op b args } {
         puts -nonewline "."
     } else {
         set extra ""
-        if { !($args == "") } {
+        if { [string length $args] != 0 } {
             set extra " ($args)"
         }
         error "{$a} doesn't $op {$b}$extra"

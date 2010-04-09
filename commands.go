@@ -127,9 +127,9 @@ func tclIf(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args")
 	}
 	cond, err := args[0].asExpr()
-    if err != nil {
-        return i.Fail(err)
-    }
+	if err != nil {
+		return i.Fail(err)
+	}
 	args = args[1:]
 	if args[0].AsString() == "then" {
 		args = args[1:]
@@ -181,10 +181,10 @@ func tclFor(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args: should be \"for start test next command\"")
 	}
 	start, test, next, body := args[0], args[1], args[2], args[3]
-    testexpr, terr := test.asExpr()
-    if terr != nil {
-        return i.Fail(terr)
-    }
+	testexpr, terr := test.asExpr()
+	if terr != nil {
+		return i.Fail(terr)
+	}
 	rc := i.EvalObj(start)
 	if rc != kTclOK {
 		return rc
@@ -203,7 +203,7 @@ func tclFor(i *Interp, args []*TclObj) TclStatus {
 			return rc
 		}
 		i.EvalObj(next)
-        testexpr.Eval(i)
+		testexpr.Eval(i)
 		cond = i.retval.AsBool()
 	}
 	return i.Return(kNil)
