@@ -11,21 +11,23 @@ type eterm interface {
 	Eval(*Interp) TclStatus
 }
 
-type binop struct {
-	op   string
+
+type binOp string
+type binOpNode struct {
+	op   binOp
 	a, b eterm
 }
 
-type unop struct {
+type unOpNode struct {
 	op string
 	v  eterm
 }
 
-func (u *unop) String() string {
+func (u *unOpNode) String() string {
 	return "(" + u.op + " " + u.v.String() + ")"
 }
 
-func (u *unop) Eval(i *Interp) TclStatus {
+func (u *unOpNode) Eval(i *Interp) TclStatus {
 	rc := u.v.Eval(i)
 	if rc != kTclOK {
 		return rc
@@ -34,19 +36,18 @@ func (u *unop) Eval(i *Interp) TclStatus {
 }
 
 
-type parens struct {
+type parenNode struct {
 	term eterm
 }
 
 
-func (p *parens) Eval(i *Interp) TclStatus {
+func (p *parenNode) Eval(i *Interp) TclStatus {
 	return p.term.Eval(i)
 }
 
-func (p *parens) String() string {
+func (p *parenNode) String() string {
 	return p.term.String()
 }
-
 
 func callCmd(i *Interp, name string, args ...*TclObj) TclStatus {
 	c := i.cmds[name]
@@ -56,7 +57,7 @@ func callCmd(i *Interp, name string, args ...*TclObj) TclStatus {
 	return c(i, args)
 }
 
-func (bb *binop) Eval(i *Interp) TclStatus {
+func (bb *binOpNode) Eval(i *Interp) TclStatus {
 	bb.a.Eval(i)
 	a := i.retval
 	bb.b.Eval(i)
@@ -64,28 +65,28 @@ func (bb *binop) Eval(i *Interp) TclStatus {
 	if i.err != nil {
 		return i.Fail(i.err)
 	}
-	return callCmd(i, bb.op, a, b)
+	return callCmd(i, string(bb.op), a, b)
 }
 
-func (bb *binop) String() string {
-	return "(" + bb.op + " " + bb.a.String() + " " + bb.b.String() + ")"
+func (bb *binOpNode) String() string {
+	return "(" + string(bb.op) + " " + bb.a.String() + " " + bb.b.String() + ")"
 }
 
 func gbalance(b eterm) eterm {
-	bb, ok := b.(*binop)
+	bb, ok := b.(*binOpNode)
 	if ok {
 		return balance(bb)
 	}
 	return b
 }
 
-var oplevel = map[string]int{
+var oplevel = map[binOp]int{
 	"*": 3, "/": 3,
 	"+": 2, "-": 2,
 	"==": 1, "!=": 1,
 	"&&": 0, "||": 0}
 
-func opgt(a, b string) bool {
+func opgt(a, b binOp) bool {
 	al, aok := oplevel[a]
 	bl, bok := oplevel[b]
 	if !aok || !bok {
@@ -94,13 +95,13 @@ func opgt(a, b string) bool {
 	return al >= bl
 }
 
-func balance(b *binop) *binop {
-	bb, ok := b.b.(*binop)
+func balance(b *binOpNode) *binOpNode {
+	bb, ok := b.b.(*binOpNode)
 	if !ok {
 		return b
 	}
 	if opgt(b.op, bb.op) {
-		return &binop{bb.op, &binop{b.op, gbalance(b.a), gbalance(bb.a)}, gbalance(bb.b)}
+		return &binOpNode{bb.op, &binOpNode{b.op, gbalance(b.a), gbalance(bb.a)}, gbalance(bb.b)}
 	}
 	return b
 }
@@ -119,7 +120,7 @@ func (p *parser) parseExpr() eterm {
 		if p.ch == ')' {
 			return res
 		}
-		return p.parseBinOp(res)
+		return p.parseBinOpNode(res)
 	}
 	return res
 }
@@ -135,11 +136,11 @@ func (p *parser) parseExprTerm() eterm {
 		p.advance()
 		e := p.parseExpr()
 		p.consumeRune(')')
-		return &parens{e}
+		return &parenNode{e}
 	case '$':
 		return p.parseVarRef()
 	case '!':
-		return p.parseUnOp()
+		return p.parseUnOpNode()
 	case '[':
 		return p.parseSubcommand()
 	}
@@ -147,7 +148,7 @@ func (p *parser) parseExprTerm() eterm {
 	return &tliteral{strval: txt}
 }
 
-func (p *parser) parseOp() string {
+func (p *parser) parseBinOp() binOp {
 	switch p.ch {
 	case '*':
 		p.advance()
@@ -191,20 +192,20 @@ func (p *parser) parseOp() string {
 	case -1:
 		p.fail("EOF")
 	}
-	p.fail("expected operand, got " + string(p.ch))
+	p.fail("expected binary operator, got " + string(p.ch))
 	return ""
 }
 
-func (p *parser) parseUnOp() eterm {
+func (p *parser) parseUnOpNode() *unOpNode {
 	p.eatWhile(isspace)
 	p.consumeRune('!')
-	return &unop{"!", p.parseExprTerm()}
+	return &unOpNode{"!", p.parseExprTerm()}
 }
 
-func (p *parser) parseBinOp(a eterm) eterm {
-	op := p.parseOp()
+func (p *parser) parseBinOpNode(a eterm) *binOpNode {
+	op := p.parseBinOp()
 	p.eatWhile(isspace)
-	return balance(&binop{op, a, p.parseExpr()})
+	return balance(&binOpNode{op, a, p.parseExpr()})
 }
 
 func tclExpr(i *Interp, args []*TclObj) TclStatus {
