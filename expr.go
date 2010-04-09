@@ -4,7 +4,6 @@ import (
 	"os"
 	"io"
 	"unicode"
-	"strings"
 )
 
 type eterm interface {
@@ -59,9 +58,9 @@ func callCmd(i *Interp, name string, args ...*TclObj) TclStatus {
 
 func (bb *binop) Eval(i *Interp) TclStatus {
 	bb.a.Eval(i)
-    a := i.retval
+	a := i.retval
 	bb.b.Eval(i)
-    b := i.retval
+	b := i.retval
 	if i.err != nil {
 		return i.Fail(i.err)
 	}
@@ -212,8 +211,13 @@ func tclExpr(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
 		return i.FailStr("wrong # args")
 	}
-	str := concat(args).AsString()
-	expr, err := ParseExpr(strings.NewReader(str))
+	var expr eterm
+	var err os.Error
+	if len(args) == 1 {
+		expr, err = args[0].asExpr()
+	} else {
+		expr, err = concat(args).asExpr()
+	}
 	if err != nil {
 		return i.Fail(err)
 	}

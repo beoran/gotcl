@@ -570,6 +570,7 @@ type TclObj struct {
 	listval []*TclObj
 	cmdsval []Command
 	vrefval *varRef
+    exprval eterm
 }
 
 
@@ -677,6 +678,17 @@ func (t *TclObj) AsList() ([]*TclObj, os.Error) {
 		}
 	}
 	return t.listval, nil
+}
+
+func (t *TclObj) asExpr() (eterm, os.Error) {
+    if t.exprval == nil {
+	   ev, err := ParseExpr(strings.NewReader(t.AsString()))
+       if err != nil {
+           return nil, err
+       }
+       t.exprval = ev
+    }
+    return t.exprval, nil
 }
 
 func parseList(txt string) ([]*TclObj, os.Error) {
