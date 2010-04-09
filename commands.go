@@ -231,15 +231,17 @@ func tclForeach(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(kNil)
 }
 
+func asInts(a *TclObj, b *TclObj) (ai int, bi int, e os.Error) {
+	bi, e = b.AsInt()
+	ai, e = a.AsInt()
+	return
+}
+
 func intcmd(fn func(int, int) int) TclCmd {
 	return func(i *Interp, args []*TclObj) TclStatus {
-		a, ae := args[0].AsInt()
-		if ae != nil {
-			return i.Fail(ae)
-		}
-		b, be := args[1].AsInt()
-		if be != nil {
-			return i.Fail(be)
+		a, b, e := asInts(args[0], args[1])
+		if e != nil {
+			return i.Fail(e)
 		}
 		return i.Return(FromInt(fn(a, b)))
 	}
@@ -275,13 +277,9 @@ func intcmpcmd(fn func(int, int) bool) TclCmd {
 		if len(args) != 2 {
 			return i.FailStr("wrong # args")
 		}
-		a, ae := args[0].AsInt()
-		if ae != nil {
-			return i.Fail(ae)
-		}
-		b, be := args[1].AsInt()
-		if be != nil {
-			return i.Fail(be)
+		a, b, e := asInts(args[0], args[1])
+		if e != nil {
+			return i.Fail(e)
 		}
 		return i.Return(FromBool(fn(a, b)))
 	}

@@ -35,7 +35,6 @@ func (u *unOpNode) Eval(i *Interp) TclStatus {
 	return i.Return(FromBool(!i.retval.AsBool()))
 }
 
-
 type parenNode struct {
 	term eterm
 }
@@ -57,6 +56,30 @@ func callCmd(i *Interp, name string, args ...*TclObj) TclStatus {
 	return c(i, args)
 }
 
+func exprPlus(i *Interp, a, b *TclObj) TclStatus {
+	ai, bi, e := asInts(a, b)
+	if e != nil {
+		return i.Fail(e)
+	}
+	return i.Return(FromInt(ai + bi))
+}
+
+func exprMinus(i *Interp, a, b *TclObj) TclStatus {
+	ai, bi, e := asInts(a, b)
+	if e != nil {
+		return i.Fail(e)
+	}
+	return i.Return(FromInt(ai - bi))
+}
+
+func exprLt(i *Interp, a, b *TclObj) TclStatus {
+	ai, bi, e := asInts(a, b)
+	if e != nil {
+		return i.Fail(e)
+	}
+	return i.Return(FromBool(ai < bi))
+}
+
 func (bb *binOpNode) Eval(i *Interp) TclStatus {
 	bb.a.Eval(i)
 	a := i.retval
@@ -72,13 +95,6 @@ func (bb *binOpNode) String() string {
 	return "(" + string(bb.op) + " " + bb.a.String() + " " + bb.b.String() + ")"
 }
 
-func gbalance(b eterm) eterm {
-	bb, ok := b.(*binOpNode)
-	if ok {
-		return balance(bb)
-	}
-	return b
-}
 
 var oplevel = map[binOp]int{
 	"*": 3, "/": 3,
@@ -95,12 +111,17 @@ func opgt(a, b binOp) bool {
 	return al >= bl
 }
 
+func gbalance(b eterm) eterm {
+	bb, ok := b.(*binOpNode)
+	if ok {
+		return balance(bb)
+	}
+	return b
+}
+
 func balance(b *binOpNode) *binOpNode {
 	bb, ok := b.b.(*binOpNode)
-	if !ok {
-		return b
-	}
-	if opgt(b.op, bb.op) {
+	if ok && opgt(b.op, bb.op) {
 		return &binOpNode{bb.op, &binOpNode{b.op, gbalance(b.a), gbalance(bb.a)}, gbalance(bb.b)}
 	}
 	return b
