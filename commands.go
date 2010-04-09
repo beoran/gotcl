@@ -237,19 +237,6 @@ func asInts(a *TclObj, b *TclObj) (ai int, bi int, e os.Error) {
 	return
 }
 
-func intcmd(fn func(int, int) int) TclCmd {
-	return func(i *Interp, args []*TclObj) TclStatus {
-		a, b, e := asInts(args[0], args[1])
-		if e != nil {
-			return i.Fail(e)
-		}
-		return i.Return(FromInt(fn(a, b)))
-	}
-}
-
-var plus = intcmd(func(a, b int) int { return a + b })
-var minus = intcmd(func(a, b int) int { return a - b })
-var times = intcmd(func(a, b int) int { return a * b })
 
 func tclNot(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
@@ -267,11 +254,15 @@ func cmpcmd(fn func(*TclObj, *TclObj) bool) TclCmd {
 	}
 }
 
-var tclOr = cmpcmd(func(a, b *TclObj) bool { return a.AsBool() || b.AsBool() })
-var tclAnd = cmpcmd(func(a, b *TclObj) bool { return a.AsBool() && b.AsBool() })
-var equalTo = cmpcmd(func(a, b *TclObj) bool { return a.AsString() == b.AsString() })
-var notEqualTo = cmpcmd(func(a, b *TclObj) bool { return a.AsString() != b.AsString() })
-
+func intcmd(fn func(int, int) int) TclCmd {
+	return func(i *Interp, args []*TclObj) TclStatus {
+		a, b, e := asInts(args[0], args[1])
+		if e != nil {
+			return i.Fail(e)
+		}
+		return i.Return(FromInt(fn(a, b)))
+	}
+}
 func intcmpcmd(fn func(int, int) bool) TclCmd {
 	return func(i *Interp, args []*TclObj) TclStatus {
 		if len(args) != 2 {
@@ -285,10 +276,67 @@ func intcmpcmd(fn func(int, int) bool) TclCmd {
 	}
 }
 
-var lessThan = intcmpcmd(func(a, b int) bool { return a < b })
-var lessThanEq = intcmpcmd(func(a, b int) bool { return a <= b })
-var greaterThan = intcmpcmd(func(a, b int) bool { return a > b })
-var greaterThanEq = intcmpcmd(func(a, b int) bool { return a >= b })
+
+func init() {
+	plus := intcmd(func(a, b int) int { return a + b })
+	minus := intcmd(func(a, b int) int { return a - b })
+	times := intcmd(func(a, b int) int { return a * b })
+	tclOr := cmpcmd(func(a, b *TclObj) bool { return a.AsBool() || b.AsBool() })
+	tclAnd := cmpcmd(func(a, b *TclObj) bool { return a.AsBool() && b.AsBool() })
+	equalTo := cmpcmd(func(a, b *TclObj) bool { return a.AsString() == b.AsString() })
+	notEqualTo := cmpcmd(func(a, b *TclObj) bool { return a.AsString() != b.AsString() })
+	lessThan := intcmpcmd(func(a, b int) bool { return a < b })
+	lessThanEq := intcmpcmd(func(a, b int) bool { return a <= b })
+	greaterThan := intcmpcmd(func(a, b int) bool { return a > b })
+	greaterThanEq := intcmpcmd(func(a, b int) bool { return a >= b })
+	initCmds := map[string]TclCmd{
+		"set":      tclSet,
+		"if":       tclIf,
+		"eval":     tclEval,
+		"info":     tclInfo,
+		"catch":    tclCatch,
+		"for":      tclFor,
+		"foreach":  tclForeach,
+		"uplevel":  tclUplevel,
+		"return":   tclReturn,
+		"break":    tclBreak,
+		"continue": tclContinue,
+		"upvar":    tclUpvar,
+		"incr":     tclIncr,
+		"exit":     tclExit,
+		"+":        plus,
+		"-":        minus,
+		"*":        times,
+		"<":        lessThan,
+		">":        greaterThan,
+		">=":       greaterThanEq,
+		"<=":       lessThanEq,
+		"==":       equalTo,
+		"!=":       notEqualTo,
+		"||":       tclOr,
+		"&&":       tclAnd,
+		"!":        tclNot,
+		"unset":    tclUnset,
+		"list":     tclList,
+		"llength":  tclLlength,
+		"lindex":   tclLindex,
+		"lappend":  tclLappend,
+		"lsearch":  tclLsearch,
+		"concat":   tclConcat,
+		"gets":     tclGets,
+		"time":     tclTime,
+		"puts":     tclPuts,
+		"string":   tclString,
+		"split":    tclSplit,
+		"source":   tclSource,
+		"apply":    tclApply,
+		"rename":   tclRename,
+		"expr":     tclExpr,
+	}
+	for k, v := range initCmds {
+		tclBasicCmds[k] = v
+	}
+}
 
 
 func tclLlength(i *Interp, args []*TclObj) TclStatus {
@@ -668,47 +716,4 @@ func tclApply(i *Interp, args []*TclObj) TclStatus {
 	return makeProc(sig, lambda[1])(i, args[1:])
 }
 
-var tclBasicCmds = map[string]TclCmd{
-	"set":      tclSet,
-	"if":       tclIf,
-	"eval":     tclEval,
-	"info":     tclInfo,
-	"catch":    tclCatch,
-	"for":      tclFor,
-	"foreach":  tclForeach,
-	"uplevel":  tclUplevel,
-	"return":   tclReturn,
-	"break":    tclBreak,
-	"continue": tclContinue,
-	"upvar":    tclUpvar,
-	"incr":     tclIncr,
-	"exit":     tclExit,
-	"+":        plus,
-	"-":        minus,
-	"*":        times,
-	"<":        lessThan,
-	">":        greaterThan,
-	">=":       greaterThanEq,
-	"<=":       lessThanEq,
-	"==":       equalTo,
-	"!=":       notEqualTo,
-	"||":       tclOr,
-	"&&":       tclAnd,
-	"!":        tclNot,
-	"unset":    tclUnset,
-	"list":     tclList,
-	"llength":  tclLlength,
-	"lindex":   tclLindex,
-	"lappend":  tclLappend,
-	"lsearch":  tclLsearch,
-	"concat":   tclConcat,
-	"gets":     tclGets,
-	"time":     tclTime,
-	"puts":     tclPuts,
-	"string":   tclString,
-	"split":    tclSplit,
-	"source":   tclSource,
-	"apply":    tclApply,
-	"rename":   tclRename,
-	"expr":     tclExpr,
-}
+var tclBasicCmds = make(map[string]TclCmd)

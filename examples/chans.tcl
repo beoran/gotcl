@@ -9,26 +9,18 @@ proc gen max {
     set ch [newchan]
     go gento $max $ch
     return $ch
-}
-
-proc zipto {ch1 ch2 res} {
-    forchan v $ch1 {
-        set v2 [<- $ch2]
-        sendchan $res [+ $v $v2]
-    }
-    closechan $res
-}
+} 
 
 proc zip {ch1 ch2} {
     set out [newchan]
-    set lambda { { ch1 ch2 res } {
+    set code { { ch1 ch2 res } {
         forchan v $ch1 {
             set v2 [<- $ch2]
             sendchan $res [+ $v $v2]
         }
         closechan $res
     }}
-    go [list apply $lambda $ch1 $ch2 $out]
+    go [list apply $code $ch1 $ch2 $out]
     return $out
 }
 
