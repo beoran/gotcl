@@ -92,11 +92,11 @@ type tliteral struct {
 }
 
 func (l *tliteral) String() string { return l.strval }
-func (l *tliteral) Eval(i *Interp) *TclObj {
+func (l *tliteral) Eval(i *Interp) TclStatus {
 	if l.tval == nil {
 		l.tval = fromStr(l.strval)
 	}
-	return l.tval
+	return i.Return(l.tval)
 }
 
 func (p *parser) parseSimpleWord() *tliteral {
@@ -134,9 +134,8 @@ type subcommand struct {
 }
 
 func (s *subcommand) String() string { return "[" + s.cmd.String() + "]" }
-func (s *subcommand) Eval(i *Interp) *TclObj {
-	i.evalCmd(s.cmd)
-	return i.retval
+func (s *subcommand) Eval(i *Interp) TclStatus {
+	return i.evalCmd(s.cmd)
 }
 
 type block struct {
@@ -146,11 +145,11 @@ type block struct {
 
 func (b *block) String() string { return "{" + b.strval + "}" }
 
-func (b *block) Eval(i *Interp) *TclObj {
+func (b *block) Eval(i *Interp) TclStatus {
 	if b.tval == nil {
 		b.tval = fromStr(b.strval)
 	}
-	return b.tval
+	return i.Return(b.tval)
 }
 
 func (p *parser) parseSubcommand() *subcommand {
@@ -210,12 +209,16 @@ func (t strlit) String() string {
 	return res.String()
 }
 
-func (t strlit) Eval(i *Interp) *TclObj {
+func (t strlit) Eval(i *Interp) TclStatus {
 	res := bytes.NewBufferString("")
 	for _, tok := range t.toks {
-		res.WriteString(tok.EvalStr(i))
+		s, rc := tok.EvalStr(i)
+		if rc != kTclOK {
+			return rc
+		}
+		res.WriteString(s)
 	}
-	return fromStr(res.String())
+	return i.Return(fromStr(res.String()))
 }
 
 
@@ -238,9 +241,12 @@ type varRef struct {
 	name      string
 }
 
-func (v varRef) Eval(i *Interp) *TclObj {
-	x, _ := i.GetVar(v)
-	return x
+func (v varRef) Eval(i *Interp) TclStatus {
+	x, e := i.GetVar(v)
+	if e != nil {
+		return i.Fail(e)
+	}
+	return i.Return(x)
 }
 
 func (v varRef) String() string {
@@ -280,7 +286,7 @@ func (c *Command) String() string {
 
 type TclTok interface {
 	String() string
-	Eval(i *Interp) *TclObj
+	Eval(i *Interp) TclStatus
 }
 
 const (
@@ -296,14 +302,16 @@ type littok struct {
 	subcmd *subcommand
 }
 
-func (lt *littok) EvalStr(i *Interp) string {
+func (lt *littok) EvalStr(i *Interp) (string, TclStatus) {
 	switch lt.kind {
 	case kRaw:
-		return lt.value
+		return lt.value, kTclOK
 	case kVar:
-		return lt.varref.Eval(i).AsString()
+		rc := lt.varref.Eval(i)
+		return i.retval.AsString(), rc
 	case kSubcmd:
-		return lt.subcmd.Eval(i).AsString()
+		rc := lt.subcmd.Eval(i)
+		return i.retval.AsString(), rc
 	}
 	panic("unrecognized kind")
 }
@@ -798,7 +806,7 @@ func (i *Interp) eval(cmds []Command) TclStatus {
 			return res
 		}
 		if ind == len(cmds)-1 {
-			return kTclOK
+			return res
 		}
 	}
 	return kTclOK
@@ -844,35 +852,35 @@ func (i *Interp) SetVar(vr varRef, val *TclObj) {
 	}
 }
 
-func (i *Interp) GetVarRaw(name string) (*TclObj, bool) {
+func (i *Interp) GetVarRaw(name string) (*TclObj, os.Error) {
 	return i.GetVar(toVarRef(name))
 }
 
-func (i *Interp) GetVar(vr varRef) (*TclObj, bool) {
+func (i *Interp) GetVar(vr varRef) (*TclObj, os.Error) {
 	v, ok := i.GetVarMap(vr.is_global)[vr.name]
 	if !ok {
-		i.FailStr("variable not found: " + vr.String())
-		return nil, false
+		return nil, os.NewError("variable not found: " + vr.String())
 	}
 	for v.link != nil {
 		v, ok = v.link.frame.vars[v.link.name]
 		if !ok {
-			i.FailStr("variable not found: " + vr.String())
-			return nil, false
+			return nil, os.NewError("variable not found: " + vr.String())
 		}
 	}
-	return v.obj, ok
+	return v.obj, nil
 }
 
-func evalArgs(i *Interp, toks []TclTok) []*TclObj {
+func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
 	res := make([]*TclObj, len(toks))
+	rc := kTclOK
 	for ind, t := range toks {
-		res[ind] = t.Eval(i)
-		if i.err != nil {
+		rc = t.Eval(i)
+		res[ind] = i.retval
+		if rc != kTclOK {
 			break
 		}
 	}
-	return res
+	return res, rc
 }
 
 func (i *Interp) ClearError() { i.err = nil }
@@ -881,9 +889,9 @@ func (i *Interp) evalCmd(cmd Command) TclStatus {
 	if len(cmd.words) == 0 {
 		return i.Return(kNil)
 	}
-	args := evalArgs(i, cmd.words)
-	if i.err != nil {
-		return kTclErr
+	args, rc := evalArgs(i, cmd.words)
+	if rc != kTclOK {
+		return rc
 	}
 	fname := args[0].AsString()
 	if f, ok := i.cmds[fname]; ok {

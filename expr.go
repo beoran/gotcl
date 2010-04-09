@@ -9,7 +9,7 @@ import (
 
 type eterm interface {
 	String() string
-	Eval(*Interp) *TclObj
+	Eval(*Interp) TclStatus
 }
 
 type binop struct {
@@ -26,12 +26,12 @@ func (u *unop) String() string {
 	return "(" + u.op + " " + u.v.String() + ")"
 }
 
-func (u *unop) Eval(i *Interp) *TclObj {
-	v := u.v.Eval(i)
-	if i.err != nil {
-		return nil
+func (u *unop) Eval(i *Interp) TclStatus {
+	rc := u.v.Eval(i)
+	if rc != kTclOK {
+		return rc
 	}
-	return FromBool(!v.AsBool())
+	return i.Return(FromBool(!i.retval.AsBool()))
 }
 
 
@@ -40,7 +40,7 @@ type parens struct {
 }
 
 
-func (p *parens) Eval(i *Interp) *TclObj {
+func (p *parens) Eval(i *Interp) TclStatus {
 	return p.term.Eval(i)
 }
 
@@ -49,21 +49,21 @@ func (p *parens) String() string {
 }
 
 
-func callCmd(i *Interp, name string, args ...*TclObj) *TclObj {
+func callCmd(i *Interp, name string, args ...*TclObj) TclStatus {
 	c := i.cmds[name]
 	if c == nil {
-		i.err = os.NewError("Not a command: " + name)
-		return kNil
+		return i.FailStr("Not a command: " + name)
 	}
-	c(i, args)
-	return i.retval
+	return c(i, args)
 }
 
-func (bb *binop) Eval(i *Interp) *TclObj {
-	a := bb.a.Eval(i)
-	b := bb.b.Eval(i)
+func (bb *binop) Eval(i *Interp) TclStatus {
+	bb.a.Eval(i)
+    a := i.retval
+	bb.b.Eval(i)
+    b := i.retval
 	if i.err != nil {
-		return nil
+		return i.Fail(i.err)
 	}
 	return callCmd(i, bb.op, a, b)
 }
@@ -217,9 +217,5 @@ func tclExpr(i *Interp, args []*TclObj) TclStatus {
 	if err != nil {
 		return i.Fail(err)
 	}
-	v := expr.Eval(i)
-	if i.err != nil {
-		return kTclErr
-	}
-	return i.Return(v)
+	return expr.Eval(i)
 }

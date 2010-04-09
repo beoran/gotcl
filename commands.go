@@ -19,9 +19,9 @@ func tclSet(i *Interp, args []*TclObj) TclStatus {
 		i.SetVar(args[0].asVarRef(), val)
 		return i.Return(val)
 	}
-	v, ok := i.GetVar(args[0].asVarRef())
-	if !ok {
-		return kTclErr
+	v, e := i.GetVar(args[0].asVarRef())
+	if e != nil {
+		return i.Fail(e)
 	}
 	return i.Return(v)
 }
@@ -63,9 +63,9 @@ func tclIncr(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args")
 	}
 	vn := args[0].asVarRef()
-	v, ok := i.GetVar(vn)
-	if !ok {
-		return kTclErr
+	v, ve := i.GetVar(vn)
+	if ve != nil {
+		return i.Fail(ve)
 	}
 
 	inc := 1
@@ -87,7 +87,7 @@ func tclIncr(i *Interp, args []*TclObj) TclStatus {
 
 func tclReturn(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
-        i.retval = kNil
+		i.retval = kNil
 		return kTclReturn
 	} else if len(args) == 1 {
 		i.retval = args[0]
@@ -343,8 +343,8 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args")
 	}
 	vname := args[0].AsString()
-	v, ok := i.GetVarRaw(vname)
-	if !ok {
+	v, ve := i.GetVarRaw(vname)
+	if ve != nil {
 		i.ClearError()
 		v = fromList(make([]*TclObj, 0, 10))
 	}
@@ -467,11 +467,11 @@ func tclInfo(i *Interp, args []*TclObj) TclStatus {
 			return i.FailStr("wrong # args")
 		}
 		vname := args[1].AsString()
-		_, ok := i.GetVarRaw(vname)
-		if !ok {
+		_, err := i.GetVarRaw(vname)
+		if err != nil {
 			i.ClearError()
 		}
-		return i.Return(FromBool(ok))
+		return i.Return(FromBool(err == nil))
 	case "globals":
 		if len(args) != 1 {
 			return i.FailStr("wrong # args")

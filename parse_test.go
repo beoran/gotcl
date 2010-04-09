@@ -51,7 +51,8 @@ func testExpr(t *testing.T, vvals map[string]string, et exprtest) {
 		for k, v := range vvals {
 			i.SetVarRaw(k, FromStr(v))
 		}
-		v := exp.Eval(i)
+		exp.Eval(i)
+        v := i.retval
 		if i.err != nil {
 			t.Errorf("Expected %s, got %v\n", et.result, i.err)
 		} else if v.AsString() != et.result {
