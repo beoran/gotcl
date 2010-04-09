@@ -2,12 +2,12 @@ set ::passcount 0
 set ::current_test ""
 
 proc assert { a op b args } {
-    if { $op $a $b } {
+    if [$op $a $b] {
         incr ::passcount
         puts -nonewline "."
     } else {
         set extra ""
-        if { ! [== $args ""] } {
+        if { !($args == "") } {
             set extra " ($args)"
         }
         error "{$a} doesn't $op {$b}$extra"
@@ -16,7 +16,7 @@ proc assert { a op b args } {
 
 proc test {name body} {
     set ::current_test $name
-    if "catch {$body} msg" {
+    if [catch $body msg] {
         puts "${::current_test}: $msg"
     }
     set ::current_test ""

@@ -21,7 +21,7 @@ test {set test} {
 
 test {if test} {
     set x ""
-    if { < 2 10 } then {
+    if { 2 < 10 } then {
         set x yes
     } else {
         set x no
@@ -29,7 +29,7 @@ test {if test} {
     assert $x == yes
 
     set y ""
-    if { < 10 2 } {
+    if { 10 < 2 } {
         set y no
     } else {
         set y yes
@@ -69,7 +69,7 @@ test {return in string} {
 
 test for_test {
     set res 0
-    for { set x 0 } { < $x 10 } { incr x } {
+    for { set x 0 } { $x < 10 } { incr x } {
         set res [+ $res $x]
     }
     assert $res == 45
@@ -77,7 +77,7 @@ test for_test {
 
 test break_test {
     set val ""
-    for { set x 0 } { < $x 5 } { incr x } {
+    for { set x 0 } { $x < 5 } { incr x } {
         set val yes
         break
         set val fail
@@ -87,7 +87,7 @@ test break_test {
 
 test {continue test} {
     set val ""
-    for { set x 0 } { < $x 5 } { incr x } {
+    for { set x 0 } { $x < 5 } { incr x } {
         set val yes
         continue
         set val fail
@@ -354,7 +354,7 @@ test {expr} {
 }
 
 proc fib {n} {
-    if { < $n 2 } {
+    if { $n < 2 } {
         return 1
     } else {
         return [+ [fib [- $n 1]] [fib [- $n 2]]]
@@ -364,7 +364,7 @@ proc fib {n} {
 proc fib2 {n} {
     set a 1
     set b 1
-    for { set nn $n } { < 0 $nn } { incr nn -1 } {
+    for { set nn $n } { 0 < $nn } { incr nn -1 } {
         set tmp [+ $a $b]
         set a $b
         set b $tmp
@@ -374,7 +374,7 @@ proc fib2 {n} {
 
 proc iota {n} {
     set result [list]
-    for {set i 1} { <= $i $n } { incr i } {
+    for {set i 1} { $i <= $n } { incr i } {
        lappend result $i        
     }
     return $result
@@ -397,13 +397,13 @@ assert [fib2 10] == 89
 
 proc sum_to {n} {
     set x 0
-    for { set i 0 } { < $i $n } { incr i } {
+    for { set i 0 } { $i < $n } { incr i } {
         set x [+ $x 1]
     }
 }
 
 puts \n
-if { == 1 0 } {
+if { 1 == 0 } {
     puts "\n----Benchmarks----"
 
     bench { fib 17 }

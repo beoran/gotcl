@@ -191,7 +191,7 @@ eat "10 plus 10 is [+ 10 10]!"
 `)
 	run(`
 eval { eat "Hello!" }
-if {+ 1 0} {
+if {1 + 0} {
     eat "Yep"
 }
 eat "Length: [llength {1 2 3 4 5}]"

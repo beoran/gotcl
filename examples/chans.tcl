@@ -1,5 +1,5 @@
 proc gento {max chan} {
-    for {set i 0} { < $i $max } { incr i } {
+    for {set i 0} { $i < $max } { incr i } {
         sendchan $chan $i
     }
     closechan $chan

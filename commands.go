@@ -126,7 +126,10 @@ func tclIf(i *Interp, args []*TclObj) TclStatus {
 	if len(args) < 2 {
 		return i.FailStr("wrong # args")
 	}
-	cond := args[0]
+	cond, err := args[0].asExpr()
+    if err != nil {
+        return i.Fail(err)
+    }
 	args = args[1:]
 	if args[0].AsString() == "then" {
 		args = args[1:]
@@ -145,7 +148,7 @@ func tclIf(i *Interp, args []*TclObj) TclStatus {
 			elseblock = args[0]
 		}
 	}
-	rc1 := i.EvalObj(cond)
+	rc1 := cond.Eval(i)
 	if rc1 != kTclOK {
 		return rc1
 	}
@@ -178,11 +181,15 @@ func tclFor(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args: should be \"for start test next command\"")
 	}
 	start, test, next, body := args[0], args[1], args[2], args[3]
+    testexpr, terr := test.asExpr()
+    if terr != nil {
+        return i.Fail(terr)
+    }
 	rc := i.EvalObj(start)
 	if rc != kTclOK {
 		return rc
 	}
-	rc = i.EvalObj(test)
+	rc = testexpr.Eval(i)
 	if rc != kTclOK {
 		return rc
 	}
@@ -196,7 +203,7 @@ func tclFor(i *Interp, args []*TclObj) TclStatus {
 			return rc
 		}
 		i.EvalObj(next)
-		i.EvalObj(test)
+        testexpr.Eval(i)
 		cond = i.retval.AsBool()
 	}
 	return i.Return(kNil)

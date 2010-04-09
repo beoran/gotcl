@@ -56,7 +56,7 @@ func Benchmark_ExprPlus4(b *testing.B) {
 func Benchmark_Fib(b *testing.B) {
 	fib := `
 proc fib {n} {
-    if { < $n 2 } {
+    if { $n < 2 } {
         return 1
     } else {
         return [+ [fib [- $n 1]] [fib [- $n 2]]]
@@ -71,7 +71,7 @@ func Benchmark_Fib2(b *testing.B) {
 proc fib2 {n} {
     set a 1
     set b 1
-    for { set nn $n } { < 0 $nn } { incr nn -1 } {
+    for { set nn $n } { 0 < $nn } { incr nn -1 } {
         set tmp [+ $a $b]
         set a $b
         set b $tmp
@@ -87,7 +87,7 @@ func BenchmarkSumTo(b *testing.B) {
 	sumto := `
 proc sum_to {n} {
     set x 0
-    for { set i 0 } { < $i $n } { incr i } {
+    for { set i 0 } { $i < $n } { incr i } {
         set x [+ $x 1]
     }
 }
@@ -99,7 +99,7 @@ func Benchmark_SumIota(b *testing.B) {
     code := `
 proc iota {n} {
     set result [list]
-    for {set i 1} { <= $i $n } { incr i } {
+    for {set i 1} { $i <= $n } { incr i } {
        lappend result $i        
     }
     return $result
