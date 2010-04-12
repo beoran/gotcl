@@ -491,7 +491,7 @@ func tclPuts(i *Interp, args []*TclObj) TclStatus {
 }
 
 func tclGets(i *Interp, args []*TclObj) TclStatus {
-	if len(args) != 1 {
+	if len(args) != 1 || len(args) != 2 {
 		return i.FailStr("wrong # args")
 	}
 	ini, ok := i.chans[args[0].AsString()]
@@ -506,7 +506,13 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 	if e != nil {
 		return i.Fail(e)
 	}
-	return i.Return(fromStr(str[0 : len(str)-1]))
+	str = str[0 : len(str)-1]
+	if len(args) == 2 {
+		resname := args[1].AsString()
+		i.SetVarRaw(resname, fromStr(str))
+		return i.Return(FromInt(len(str)))
+	}
+	return i.Return(fromStr(str))
 }
 
 func tclInfo(i *Interp, args []*TclObj) TclStatus {
