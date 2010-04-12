@@ -1,6 +1,7 @@
 set ::passcount 0
 set ::current_test ""
 
+
 proc assert { a op b args } {
     if [$op $a $b] {
         incr ::passcount
@@ -12,6 +13,11 @@ proc assert { a op b args } {
         }
         error "{$a} doesn't $op {$b}$extra"
     }
+}
+
+proc assert_noerr code {
+    set ev [catch [list uplevel $code] msg]
+    assert $ev == 0
 }
 
 proc test {name body} {

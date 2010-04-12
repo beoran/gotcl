@@ -75,6 +75,30 @@ test for_test {
     assert $res == 45
 }
 
+test {while test} {
+    set x 0
+    assert_noerr {
+        while {$x > 2} {
+            error "failed."
+        }
+    }
+    while {$x < 10} {
+        incr x
+    }
+    assert $x == 10
+    while {$x >= 0} {
+        break
+        incr x -1
+    }
+    assert $x == 10
+    while {$x > 0} {
+        incr x -1
+        continue
+        error "failed"
+    }
+    assert $x == 0
+}
+
 test break_test {
     set val ""
     for { set x 0 } { $x < 5 } { incr x } {
@@ -417,7 +441,7 @@ proc sum_to {n} {
     }
 }
 
-puts \n
+puts "\nPassed $::passcount assertions."
 if { 1 == 0 } {
     puts "\n----Benchmarks----"
 

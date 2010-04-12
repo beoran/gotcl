@@ -32,6 +32,9 @@ func tclUnset(i *Interp, args []*TclObj) TclStatus {
 }
 
 func tclUplevel(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 1 {
+		return i.FailStr("wrong # args")
+	}
 	orig_frame := i.frame
 	i.frame = i.frame.up()
 	rc := i.EvalObj(args[0])
@@ -176,6 +179,34 @@ func tclExit(i *Interp, args []*TclObj) TclStatus {
 	return kTclOK
 }
 
+func tclWhile(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 2 {
+		return i.FailStr("wrong # args")
+	}
+	test, body := args[0], args[1]
+	testexpr, terr := test.asExpr()
+	if terr != nil {
+		return i.Fail(terr)
+	}
+	rc := testexpr.Eval(i)
+	if rc != kTclOK {
+		return rc
+	}
+
+	cond := i.retval.AsBool()
+	for cond {
+		rc = i.EvalObj(body)
+		if rc == kTclBreak {
+			break
+		} else if rc != kTclOK && rc != kTclContinue {
+			return rc
+		}
+		testexpr.Eval(i)
+		cond = i.retval.AsBool()
+	}
+	return i.Return(kNil)
+}
+
 func tclFor(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 4 {
 		return i.FailStr("wrong # args: should be \"for start test next command\"")
@@ -295,6 +326,7 @@ func init() {
 		"eval":     tclEval,
 		"info":     tclInfo,
 		"catch":    tclCatch,
+		"while":    tclWhile,
 		"for":      tclFor,
 		"foreach":  tclForeach,
 		"uplevel":  tclUplevel,
