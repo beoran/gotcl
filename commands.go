@@ -523,8 +523,8 @@ func tclPuts(i *Interp, args []*TclObj) TclStatus {
 }
 
 func tclGets(i *Interp, args []*TclObj) TclStatus {
-	if len(args) != 1 || len(args) != 2 {
-		return i.FailStr("wrong # args")
+	if len(args) != 1 && len(args) != 2 {
+		return i.FailStr("gets: wrong # args")
 	}
 	ini, ok := i.chans[args[0].AsString()]
 	if !ok {
@@ -535,14 +535,24 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("channel wasn't opened for reading")
 	}
 	str, e := in.ReadString('\n')
+	eof := false
 	if e != nil {
-		return i.Fail(e)
+		if e != os.EOF {
+			return i.Fail(e)
+		}
+		eof = true
 	}
-	str = str[0 : len(str)-1]
+	if len(str) > 0 {
+		str = str[0 : len(str)-1]
+	}
 	if len(args) == 2 {
 		resname := args[1].AsString()
 		i.SetVarRaw(resname, fromStr(str))
-		return i.Return(FromInt(len(str)))
+		retval := len(str)
+		if eof {
+			retval = -1
+		}
+		return i.Return(FromInt(retval))
 	}
 	return i.Return(fromStr(str))
 }
