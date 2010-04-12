@@ -333,6 +333,13 @@ test {rename to delete} {
     assert [lsearch [info commands] fizzlebuggy] == -1
 }
 
+test {expr string eq ne} {
+    assert [expr {"foo" eq "foo"}] == 1
+    assert [expr {"foo" ne "foo"}] == 0
+    assert [expr {"foo" ne "roo"}] == 1
+    assert [expr {"foo" ne "foo"}] == 0
+}
+
 test {if (true|false|no)} {
     set x boo
     if true { set x ok }

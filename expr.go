@@ -162,6 +162,8 @@ func (p *parser) parseExprTerm() eterm {
 		return p.parseVarRef()
 	case '!':
 		return p.parseUnOpNode()
+	case '"':
+		return p.parseStringLit()
 	case '[':
 		return p.parseSubcommand()
 	}
@@ -184,6 +186,14 @@ func (p *parser) parseBinOp() binOp {
 		p.advance()
 		p.consumeRune('|')
 		return "||"
+	case 'e':
+		p.advance()
+		p.consumeRune('q')
+		return "=="
+	case 'n':
+		p.advance()
+		p.consumeRune('e')
+		return "!="
 	case '&':
 		p.advance()
 		p.consumeRune('&')
