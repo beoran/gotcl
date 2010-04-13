@@ -192,7 +192,6 @@ func tclWhile(i *Interp, args []*TclObj) TclStatus {
 	if rc != kTclOK {
 		return rc
 	}
-
 	cond := i.retval.AsBool()
 	for cond {
 		rc = i.EvalObj(body)
@@ -201,7 +200,10 @@ func tclWhile(i *Interp, args []*TclObj) TclStatus {
 		} else if rc != kTclOK && rc != kTclContinue {
 			return rc
 		}
-		testexpr.Eval(i)
+		rc = testexpr.Eval(i)
+		if rc != kTclOK {
+			return rc
+		}
 		cond = i.retval.AsBool()
 	}
 	return i.Return(kNil)
