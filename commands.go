@@ -2,6 +2,7 @@ package gotcl
 
 import (
 	"fmt"
+	"io"
 	"time"
 	"os"
 	"bytes"
@@ -358,6 +359,7 @@ func init() {
 		"lsearch":  tclLsearch,
 		"concat":   tclConcat,
 		"gets":     tclGets,
+		"flush":    tclFlush,
 		"time":     tclTime,
 		"puts":     tclPuts,
 		"string":   tclString,
@@ -491,10 +493,26 @@ func tclTime(i *Interp, args []*TclObj) TclStatus {
 	return i.FailStr("wrong # args")
 }
 
+func tclFlush(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 1 {
+		return i.FailStr("wrong # args")
+	}
+	outfile, ok := i.chans[args[0].AsString()]
+	if !ok {
+		return i.FailStr("no such channel")
+	}
+	if fl, ok := outfile.(interface {
+		Flush() os.Error
+	}); ok {
+		fl.Flush()
+	}
+	return i.Return(kNil)
+}
+
 func tclPuts(i *Interp, args []*TclObj) TclStatus {
 	newline := true
 	var s string
-	file := tclStdout
+	file := i.chans["stdout"].(io.Writer)
 	if len(args) == 1 {
 		s = args[0].AsString()
 	} else if len(args) == 2 || len(args) == 3 {
@@ -507,7 +525,7 @@ func tclPuts(i *Interp, args []*TclObj) TclStatus {
 			if !ok {
 				return i.FailStr("wrong args")
 			}
-			file, ok = outfile.(*bufio.Writer)
+			file, ok = outfile.(io.Writer)
 			if !ok {
 				return i.FailStr("channel wasn't opened for writing")
 			}
@@ -520,7 +538,6 @@ func tclPuts(i *Interp, args []*TclObj) TclStatus {
 	} else {
 		fmt.Fprint(file, s)
 	}
-	file.Flush()
 	return i.Return(kNil)
 }
 

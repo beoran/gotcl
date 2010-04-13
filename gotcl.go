@@ -782,7 +782,6 @@ func tclProc(i *Interp, args []*TclObj) TclStatus {
 }
 
 var tclStdin = bufio.NewReader(os.Stdin)
-var tclStdout = bufio.NewWriter(os.Stdout)
 
 func NewInterp() *Interp {
 	i := new(Interp)
@@ -790,8 +789,8 @@ func NewInterp() *Interp {
 	i.frame = newstackframe(nil)
 	i.chans = make(map[string]interface{})
 	i.chans["stdin"] = tclStdin
-	i.chans["stdout"] = tclStdout
-	i.chans["stderr"] = bufio.NewWriter(os.Stderr)
+	i.chans["stdout"] = os.Stdout
+	i.chans["stderr"] = os.Stderr
 
 	for n, f := range tclBasicCmds {
 		i.SetCmd(n, f)
