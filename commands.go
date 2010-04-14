@@ -43,6 +43,23 @@ func tclUplevel(i *Interp, args []*TclObj) TclStatus {
 	return rc
 }
 
+var uniqueNum int = 0
+
+func tclOpen(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 1 {
+		return i.FailStr("wrong # args")
+	}
+	fname := args[0].AsString()
+	ff, err := os.Open(fname, os.O_RDONLY, 0)
+	if err != nil {
+		return i.Fail(err)
+	}
+	channame := fmt.Sprintf("file%d", uniqueNum)
+	uniqueNum++
+	i.chans[channame] = bufio.NewReader(ff)
+	return i.Return(FromStr(channame))
+}
+
 func tclUpvar(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 2 && len(args) != 3 {
 		return i.FailStr("wrong # args")
@@ -315,6 +332,9 @@ func init() {
 	plus := intcmd(func(a, b int) int { return a + b })
 	minus := intcmd(func(a, b int) int { return a - b })
 	times := intcmd(func(a, b int) int { return a * b })
+	xor := intcmd(func(a, b int) int { return a ^ b })
+	lshift := intcmd(func(a, b int) int { return a << uint(b) })
+	rshift := intcmd(func(a, b int) int { return a >> uint(b) })
 	tclOr := cmpcmd(func(a, b *TclObj) bool { return a.AsBool() || b.AsBool() })
 	tclAnd := cmpcmd(func(a, b *TclObj) bool { return a.AsBool() && b.AsBool() })
 	equalTo := cmpcmd(func(a, b *TclObj) bool { return a.AsString() == b.AsString() })
@@ -332,6 +352,7 @@ func init() {
 		"while":    tclWhile,
 		"for":      tclFor,
 		"foreach":  tclForeach,
+		"open":     tclOpen,
 		"uplevel":  tclUplevel,
 		"return":   tclReturn,
 		"break":    tclBreak,
@@ -342,6 +363,9 @@ func init() {
 		"+":        plus,
 		"-":        minus,
 		"*":        times,
+		"^":        xor,
+		">>":       rshift,
+		"<<":       lshift,
 		"<":        lessThan,
 		">":        greaterThan,
 		">=":       greaterThanEq,

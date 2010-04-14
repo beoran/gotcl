@@ -390,6 +390,11 @@ test {expr} {
     set y 2
     assert [expr { ($y*$y) + $y }] == 6
     assert [expr {$y*$y}] == 4
+
+    assert [expr { 2 ^ 2 }] == 0
+    assert [expr { 1 << 2 }] == 4
+    assert [expr { 4 >> 2 }] == 1
+    assert [expr { ~0 }] == -1
 }
 
 proc fib {n} {

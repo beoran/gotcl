@@ -19,12 +19,12 @@ type binOpNode struct {
 }
 
 type unOpNode struct {
-	op string
+	op int
 	v  eterm
 }
 
 func (u *unOpNode) String() string {
-	return "(" + u.op + " " + u.v.String() + ")"
+	return "(" + string(u.op) + " " + u.v.String() + ")"
 }
 
 func (u *unOpNode) Eval(i *Interp) TclStatus {
@@ -32,7 +32,16 @@ func (u *unOpNode) Eval(i *Interp) TclStatus {
 	if rc != kTclOK {
 		return rc
 	}
-	return i.Return(FromBool(!i.retval.AsBool()))
+	if u.op == '!' {
+		return i.Return(FromBool(!i.retval.AsBool()))
+	} else if u.op == '~' {
+		iv, e := i.retval.AsInt()
+		if e != nil {
+			return i.Fail(e)
+		}
+		return i.Return(FromInt(^iv))
+	}
+	return i.FailStr("invalid unary operator")
 }
 
 type parenNode struct {
@@ -160,7 +169,7 @@ func (p *parser) parseExprTerm() eterm {
 		return &parenNode{e}
 	case '$':
 		return p.parseVarRef()
-	case '!':
+	case '!', '~':
 		return p.parseUnOpNode()
 	case '"':
 		return p.parseStringLit()
@@ -198,6 +207,9 @@ func (p *parser) parseBinOp() binOp {
 		p.advance()
 		p.consumeRune('&')
 		return "&&"
+	case '^':
+		p.advance()
+		return "^"
 	case '!':
 		p.advance()
 		p.consumeRune('=')
@@ -211,6 +223,9 @@ func (p *parser) parseBinOp() binOp {
 		if p.ch == '=' {
 			p.advance()
 			return ">="
+		} else if p.ch == '>' {
+			p.advance()
+			return ">>"
 		}
 		return ">"
 	case '<':
@@ -218,6 +233,9 @@ func (p *parser) parseBinOp() binOp {
 		if p.ch == '=' {
 			p.advance()
 			return "<="
+		} else if p.ch == '<' {
+			p.advance()
+			return "<<"
 		}
 		return "<"
 	case -1:
@@ -228,9 +246,14 @@ func (p *parser) parseBinOp() binOp {
 }
 
 func (p *parser) parseUnOpNode() *unOpNode {
-	p.eatWhile(isspace)
-	p.consumeRune('!')
-	return &unOpNode{"!", p.parseExprTerm()}
+	var op int
+	if p.ch == '!' || p.ch == '~' {
+		op = p.ch
+	} else {
+		p.fail("expected unary operator")
+	}
+	p.advance()
+	return &unOpNode{op, p.parseExprTerm()}
 }
 
 func (p *parser) parseBinOpNode(a eterm) *binOpNode {
