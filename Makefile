@@ -4,6 +4,7 @@ GOFILES=\
         gotcl.go\
         commands.go\
         expr.go\
-        chans.go
+        chans.go\
+        glob.go
 
 include $(GOROOT)/src/Make.pkg
