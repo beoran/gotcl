@@ -92,6 +92,7 @@ func tclSendChan(i *Interp, args []*TclObj) TclStatus {
 func tclGo(i *Interp, args []*TclObj) TclStatus {
 	ni := new(Interp)
 	ni.cmds = i.cmds
+    ni.chans = i.chans
 	ni.frame = newstackframe(nil)
 	go func() {
 		tclEval(ni, args)

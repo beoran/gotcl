@@ -175,11 +175,6 @@ test {lappend} {
     assert [llength $x] == 6
 }
 
-test {! test} {
-    assert [! [== 3 3]] == 0
-    assert [! [== 1 3]] == 1
-}
-
 test {args} {
     proc count_args {args} {
         return [llength $args]
