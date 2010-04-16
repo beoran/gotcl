@@ -288,36 +288,39 @@ func asInts(a *TclObj, b *TclObj) (ai int, bi int, e os.Error) {
 	return
 }
 
-func cmpcmd(fn func(*TclObj, *TclObj) bool) TclCmd {
-	return func(i *Interp, args []*TclObj) TclStatus {
-		if len(args) != 2 {
-			return i.FailStr("wrong # args")
+func to_cmd(fni interface{}) TclCmd {
+	switch fn := fni.(type) {
+	case func(*TclObj, *TclObj) bool:
+		return func(i *Interp, args []*TclObj) TclStatus {
+			if len(args) != 2 {
+				return i.FailStr("wrong # args")
+			}
+			return i.Return(FromBool(fn(args[0], args[1])))
 		}
-		return i.Return(FromBool(fn(args[0], args[1])))
+	case func(int, int) int:
+		return func(i *Interp, args []*TclObj) TclStatus {
+			if len(args) != 2 {
+				return i.FailStr("wrong # args")
+			}
+			a, b, e := asInts(args[0], args[1])
+			if e != nil {
+				return i.Fail(e)
+			}
+			return i.Return(FromInt(fn(a, b)))
+		}
+	case func(int, int) bool:
+		return func(i *Interp, args []*TclObj) TclStatus {
+			if len(args) != 2 {
+				return i.FailStr("wrong # args")
+			}
+			a, b, e := asInts(args[0], args[1])
+			if e != nil {
+				return i.Fail(e)
+			}
+			return i.Return(FromBool(fn(a, b)))
+		}
 	}
-}
-
-func intcmd(fn func(int, int) int) TclCmd {
-	return func(i *Interp, args []*TclObj) TclStatus {
-		a, b, e := asInts(args[0], args[1])
-		if e != nil {
-			return i.Fail(e)
-		}
-		return i.Return(FromInt(fn(a, b)))
-	}
-}
-
-func intcmpcmd(fn func(int, int) bool) TclCmd {
-	return func(i *Interp, args []*TclObj) TclStatus {
-		if len(args) != 2 {
-			return i.FailStr("wrong # args")
-		}
-		a, b, e := asInts(args[0], args[1])
-		if e != nil {
-			return i.Fail(e)
-		}
-		return i.Return(FromBool(fn(a, b)))
-	}
+	panic("Can't convert!")
 }
 
 func tclLlength(i *Interp, args []*TclObj) TclStatus {
@@ -676,11 +679,7 @@ func tclSplit(i *Interp, args []*TclObj) TclStatus {
 				func(c int) bool { return oneof(chars, c) })
 		}
 	}
-	results := make([]*TclObj, len(strs))
-	for i, s := range strs {
-		results[i] = fromStr(s)
-	}
-	return i.Return(fromList(results))
+	return i.Return(FromList(strs))
 }
 
 func tclLsearch(i *Interp, args []*TclObj) TclStatus {
@@ -742,24 +741,24 @@ func tclApply(i *Interp, args []*TclObj) TclStatus {
 var tclBasicCmds = make(map[string]TclCmd)
 
 func init() {
-	mathCmds := map[string]TclCmd{
-		"+":  intcmd(func(a, b int) int { return a + b }),
-		"-":  intcmd(func(a, b int) int { return a - b }),
-		"*":  intcmd(func(a, b int) int { return a * b }),
-		"^":  intcmd(func(a, b int) int { return a ^ b }),
-		"<<": intcmd(func(a, b int) int { return a << uint(b) }),
-		">>": intcmd(func(a, b int) int { return a >> uint(b) }),
-		"||": cmpcmd(func(a, b *TclObj) bool { return a.AsBool() || b.AsBool() }),
-		"&&": cmpcmd(func(a, b *TclObj) bool { return a.AsBool() && b.AsBool() }),
-		"==": cmpcmd(func(a, b *TclObj) bool { return a.AsString() == b.AsString() }),
-		"!=": cmpcmd(func(a, b *TclObj) bool { return a.AsString() != b.AsString() }),
-		"<":  intcmpcmd(func(a, b int) bool { return a < b }),
-		"<=": intcmpcmd(func(a, b int) bool { return a <= b }),
-		">":  intcmpcmd(func(a, b int) bool { return a > b }),
-		">=": intcmpcmd(func(a, b int) bool { return a >= b }),
+	mathCmds := map[string]interface{}{
+		"+":  func(a, b int) int { return a + b },
+		"-":  func(a, b int) int { return a - b },
+		"*":  func(a, b int) int { return a * b },
+		"^":  func(a, b int) int { return a ^ b },
+		"<<": func(a, b int) int { return a << uint(b) },
+		">>": func(a, b int) int { return a >> uint(b) },
+		"||": func(a, b *TclObj) bool { return a.AsBool() || b.AsBool() },
+		"&&": func(a, b *TclObj) bool { return a.AsBool() && b.AsBool() },
+		"==": func(a, b *TclObj) bool { return a.AsString() == b.AsString() },
+		"!=": func(a, b *TclObj) bool { return a.AsString() != b.AsString() },
+		"<":  func(a, b int) bool { return a < b },
+		"<=": func(a, b int) bool { return a <= b },
+		">":  func(a, b int) bool { return a > b },
+		">=": func(a, b int) bool { return a >= b },
 	}
 	for k, v := range mathCmds {
-		tclBasicCmds[k] = v
+		tclBasicCmds[k] = to_cmd(v)
 	}
 	initCmds := map[string]TclCmd{
 		"apply":    tclApply,
