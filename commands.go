@@ -656,6 +656,9 @@ func tclString(i *Interp, args []*TclObj) TclStatus {
 	case "length":
 		return i.Return(FromInt(utf8.RuneCountInString(str)))
 	case "index":
+		if len(args) != 3 {
+			return i.FailStr("wrong # args")
+		}
 		ind, e := args[2].AsInt()
 		if e != nil {
 			return i.Fail(e)
@@ -666,6 +669,11 @@ func tclString(i *Interp, args []*TclObj) TclStatus {
 		return i.Return(fromStr(str[ind : ind+1]))
 	case "trim":
 		return i.Return(fromStr(strings.TrimSpace(str)))
+	case "match":
+		if len(args) != 3 {
+			return i.FailStr("wrong # args")
+		}
+		return i.Return(FromBool(GlobMatch(str, args[2].AsString())))
 	}
 	return i.FailStr("bad option to \"string\": " + cmd)
 }

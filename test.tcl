@@ -317,6 +317,11 @@ test {string trim} {
     assert [string trim foo] == foo
 }
 
+test {string match} {
+    assert [string match a?c abc] == 1
+    assert [string match ab* abcde] == 1
+}
+
 test {split} {
     assert [split "a   b   c"] == "a b c"
 }

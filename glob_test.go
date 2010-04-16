@@ -46,4 +46,6 @@ func TestBasic(t *testing.T) {
 	check_not("[0-", "")
 	check_not("[0-", "[0-")
 	check(`\\\\`, `\\`)
+	check("*", "")
+	check("*", "*")
 }

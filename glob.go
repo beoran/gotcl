@@ -10,19 +10,9 @@ func uncons(s string) (int, string) {
 	return head, s[sz:]
 }
 
-func head(s string) int {
-	c, _ := uncons(s)
-	return c
-}
-
-func tail(s string) string {
-	_, t := uncons(s)
-	return t
-}
-
 func matchcharset(pat, strin string) (bool, string, string) {
 	if strin == "" {
-		return false, pat, strin
+		return false, "", ""
 	}
 	sh, str := uncons(strin)
 	ph, rest := uncons(pat)
@@ -31,10 +21,9 @@ func matchcharset(pat, strin string) (bool, string, string) {
 		if !got_match {
 			if sh == ph {
 				got_match = true
-			} else if head(rest) == '-' {
-				rest = tail(rest)
+			} else if rh, rt := uncons(rest); rh == '-' {
 				var ph2 int
-				ph2, rest = uncons(rest)
+				ph2, rest = uncons(rt)
 				if ph2 == utf8.RuneError {
 					return false, "", ""
 				}
@@ -54,7 +43,7 @@ func GlobMatch(pat, str string) bool {
 			if str == "" {
 				return false
 			}
-			str = tail(str)
+			_, str = uncons(str)
 		case '[':
 			is_match := false
 			is_match, rest, str = matchcharset(rest, str)
@@ -65,7 +54,7 @@ func GlobMatch(pat, str string) bool {
 			if rest == "" {
 				return true
 			}
-			for ; str != ""; str = tail(str) {
+			for ; str != ""; _, str = uncons(str) {
 				if GlobMatch(rest, str) {
 					return true
 				}
