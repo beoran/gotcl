@@ -69,9 +69,9 @@ func tclRecvChan(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("not a chan: " + name)
 	}
 	v := <-ch
-    if v == nil {
-        v = kNil
-    }
+	if v == nil {
+		v = kNil
+	}
 	return i.Return(v)
 }
 
@@ -92,7 +92,7 @@ func tclSendChan(i *Interp, args []*TclObj) TclStatus {
 func tclGo(i *Interp, args []*TclObj) TclStatus {
 	ni := new(Interp)
 	ni.cmds = i.cmds
-    ni.chans = i.chans
+	ni.chans = i.chans
 	ni.frame = newstackframe(nil)
 	go func() {
 		tclEval(ni, args)
