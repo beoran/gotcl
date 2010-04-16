@@ -331,6 +331,7 @@ test {split empty} {
 
 test {concat} {
     assert [concat "  a  " "  b  "] == "a b"
+    assert [concat " a b {c   " d " e} f"] == "a b {c d e} f"
 }
 
 test {info exists} {

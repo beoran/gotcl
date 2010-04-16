@@ -362,6 +362,9 @@ func concat(args []*TclObj) *TclObj {
 }
 
 func tclEval(i *Interp, args []*TclObj) TclStatus {
+	if len(args) == 0 {
+		return i.FailStr("wrong # args")
+	}
 	if len(args) == 1 {
 		return i.EvalObj(args[0])
 	}

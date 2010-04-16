@@ -246,19 +246,16 @@ func (p *parser) parseBinOp() binOp {
 }
 
 func (p *parser) parseUnOpNode() *unOpNode {
-	var op int
-	if p.ch == '!' || p.ch == '~' {
-		op = p.ch
-	} else {
+	if p.ch != '!' && p.ch != '~' {
 		p.fail("expected unary operator")
 	}
+	op := p.ch
 	p.advance()
 	return &unOpNode{op, p.parseExprTerm()}
 }
 
 func (p *parser) parseBinOpNode(a eterm) *binOpNode {
 	op := p.parseBinOp()
-	p.eatWhile(isspace)
 	return balance(&binOpNode{op, a, p.parseExpr()})
 }
 
