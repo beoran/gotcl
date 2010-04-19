@@ -196,7 +196,7 @@ type strlit struct {
 }
 
 func (t strlit) String() string {
-	res := bytes.NewBufferString(`"`)
+	var res bytes.Buffer
 	for _, tok := range t.toks {
 		if tok.kind == kRaw {
 			res.WriteString(tok.value)
@@ -211,7 +211,7 @@ func (t strlit) String() string {
 }
 
 func (t strlit) Eval(i *Interp) TclStatus {
-	res := bytes.NewBufferString("")
+	var res bytes.Buffer
 	for _, tok := range t.toks {
 		s, rc := tok.EvalStr(i)
 		if rc != kTclOK {
@@ -351,7 +351,7 @@ func escaped(r int) string {
 
 func (p *parser) parseStringLit() strlit {
 	p.consumeRune('"')
-	accum := bytes.NewBuffer(make([]byte, 0, 256))
+	var accum bytes.Buffer
 	toks := make([]littok, 0, 8)
 	record_accum := func() {
 		if accum.Len() != 0 {
@@ -566,22 +566,23 @@ func (i *Interp) FailStr(msg string) TclStatus {
 }
 
 type TclObj struct {
-	value   *string
-	intval  *int
-	listval []*TclObj
-	cmdsval []Command
-	vrefval *varRef
-	exprval eterm
+	value      *string
+	intval     int
+	has_intval bool
+	listval    []*TclObj
+	cmdsval    []Command
+	vrefval    *varRef
+	exprval    eterm
 }
 
 
 func (t *TclObj) AsString() string {
 	if t.value == nil {
-		if t.intval != nil {
-			v := strconv.Itoa(*t.intval)
+		if t.has_intval {
+			v := strconv.Itoa(t.intval)
 			t.value = &v
 		} else if t.listval != nil {
-			str := bytes.NewBufferString("")
+			var str bytes.Buffer
 			for ind, i := range t.listval {
 				if ind != 0 {
 					str.WriteString(" ")
@@ -606,14 +607,15 @@ func (t *TclObj) AsString() string {
 }
 
 func (t *TclObj) AsInt() (int, os.Error) {
-	if t.intval == nil {
+	if !t.has_intval {
 		v, e := strconv.Atoi(*t.value)
 		if e != nil {
 			return 0, os.NewError("expected integer but got \"" + *t.value + "\"")
 		}
-		t.intval = &v
+		t.has_intval = true
+		t.intval = v
 	}
-	return *t.intval, nil
+	return t.intval, nil
 }
 
 func (t *TclObj) AsCmds() ([]Command, os.Error) {
@@ -647,7 +649,7 @@ func (t *TclObj) asVarRef() varRef {
 func FromStr(s string) *TclObj {
 	return &TclObj{value: &s}
 }
-func FromInt(i int) *TclObj { return &TclObj{intval: &i} }
+func FromInt(i int) *TclObj { return &TclObj{intval: i, has_intval: true} }
 
 func FromList(l []string) *TclObj {
 	vl := make([]*TclObj, len(l))

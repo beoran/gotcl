@@ -365,7 +365,7 @@ func tclLindex(i *Interp, args []*TclObj) TclStatus {
 }
 
 func concat(args []*TclObj) *TclObj {
-	result := bytes.NewBufferString("")
+	var result bytes.Buffer
 	for ind, x := range args {
 		if ind != 0 {
 			result.WriteString(" ")
