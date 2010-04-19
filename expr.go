@@ -181,7 +181,7 @@ func ParseExpr(in io.Reader) (item eterm, err os.Error) {
 
 func (p *parser) parseExpr() eterm {
 	res := p.parseExprTerm()
-	p.eatWhile(isspace)
+	p.eatWhile(unicode.IsSpace)
 	if p.ch != -1 {
 		if p.ch == ')' {
 			return res
@@ -196,7 +196,7 @@ func istermchar(c int) bool {
 }
 
 func (p *parser) parseExprTerm() eterm {
-	p.eatWhile(isspace)
+	p.eatWhile(unicode.IsSpace)
 	switch p.ch {
 	case '(':
 		p.advance()

@@ -23,7 +23,6 @@ func newParser(input io.Reader) *parser {
 	return p
 }
 
-func isspace(c int) bool    { return c == ' ' || c == '\n' || c == '\t' || c == '\r' }
 func issepspace(c int) bool { return c == '\t' || c == ' ' }
 func isvarword(c int) bool {
 	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
@@ -33,7 +32,7 @@ func isword(c int) bool {
 	case '[', ']', ';', '$', '"':
 		return false
 	}
-	return !isspace(c)
+	return !unicode.IsSpace(c)
 }
 
 func (p *parser) fail(s string) {
@@ -394,10 +393,10 @@ func isEol(ch int) bool {
 }
 
 func (p *parser) eatExtra() {
-	p.eatWhile(isspace)
+	p.eatWhile(unicode.IsSpace)
 	for p.ch == ';' {
 		p.consumeRune(';')
-		p.eatWhile(isspace)
+		p.eatWhile(unicode.IsSpace)
 	}
 }
 
@@ -418,7 +417,7 @@ func appendcmd(tx *[]Command, t Command) {
 
 func (p *parser) parseCommands() []Command {
 	res := make([]Command, 0, 32)
-	p.eatWhile(isspace)
+	p.eatWhile(unicode.IsSpace)
 	for p.ch != -1 {
 		if p.ch == '#' {
 			p.parseComment()
@@ -443,7 +442,7 @@ func appendttok(tx *[]TclTok, t TclTok) {
 func (p *parser) parseList() []TclTok {
 	res := make([]TclTok, 0, 32)
 	for p.ch != -1 {
-		p.eatWhile(isspace)
+		p.eatWhile(unicode.IsSpace)
 		if p.ch == -1 {
 			break
 		}
@@ -452,10 +451,10 @@ func (p *parser) parseList() []TclTok {
 	return res
 }
 
-func notspace(c int) bool { return !isspace(c) }
+func notspace(c int) bool { return !unicode.IsSpace(c) }
 
 func (p *parser) parseListToken() TclTok {
-	p.eatWhile(isspace)
+	p.eatWhile(unicode.IsSpace)
 	switch p.ch {
 	case '{':
 		return &tliteral{strval: p.parseBlockData()}
@@ -477,7 +476,7 @@ func (p *parser) parseCommand() Command {
 }
 
 func (p *parser) parseToken() TclTok {
-	p.eatWhile(isspace)
+	p.eatWhile(unicode.IsSpace)
 	switch p.ch {
 	case '[':
 		return p.parseSubcommand()
