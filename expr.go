@@ -11,7 +11,6 @@ type eterm interface {
 	Eval(*Interp) TclStatus
 }
 
-type binOp string
 type binOpNode struct {
 	op   *binaryOp
 	a, b eterm

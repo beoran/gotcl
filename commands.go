@@ -137,7 +137,7 @@ func tclCatch(i *Interp, args []*TclObj) TclStatus {
 	}
 	r := i.EvalObj(args[0])
 	if len(args) == 2 && r == kTclErr {
-		i.SetVarRaw(args[1].AsString(), fromStr(i.err.String()))
+		i.SetVarRaw(args[1].AsString(), FromStr(i.err.String()))
 	}
 	i.ClearError()
 	return i.Return(FromInt(int(r)))
@@ -372,7 +372,7 @@ func concat(args []*TclObj) *TclObj {
 		}
 		result.WriteString(strings.TrimSpace(x.AsString()))
 	}
-	return fromStr(result.String())
+	return FromStr(result.String())
 }
 
 func tclEval(i *Interp, args []*TclObj) TclStatus {
@@ -438,7 +438,7 @@ func tclTime(i *Interp, args []*TclObj) TclStatus {
 		if rc != kTclOK {
 			return rc
 		}
-		return i.Return(fromStr(formatTime(dur)))
+		return i.Return(FromStr(formatTime(dur)))
 	} else if len(args) == 2 {
 		count, err := args[1].AsInt()
 		if err != nil {
@@ -450,7 +450,7 @@ func tclTime(i *Interp, args []*TclObj) TclStatus {
 			total += dur
 		}
 		avg := total / int64(count)
-		return i.Return(fromStr(formatTime(avg) + " per iteration"))
+		return i.Return(FromStr(formatTime(avg) + " per iteration"))
 	}
 	return i.FailStr("wrong # args")
 }
@@ -528,14 +528,14 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 	}
 	if len(args) == 2 {
 		resname := args[1].AsString()
-		i.SetVarRaw(resname, fromStr(str))
+		i.SetVarRaw(resname, FromStr(str))
 		retval := len(str)
 		if eof {
 			retval = -1
 		}
 		return i.Return(FromInt(retval))
 	}
-	return i.Return(fromStr(str))
+	return i.Return(FromStr(str))
 }
 
 func tclInfo(i *Interp, args []*TclObj) TclStatus {
@@ -562,7 +562,7 @@ func tclInfo(i *Interp, args []*TclObj) TclStatus {
 		results := make([]*TclObj, len(m))
 		ind := 0
 		for vn, _ := range m {
-			results[ind] = fromStr(vn)
+			results[ind] = FromStr(vn)
 			ind++
 		}
 		return i.Return(fromList(results))
@@ -573,7 +573,7 @@ func tclInfo(i *Interp, args []*TclObj) TclStatus {
 		cmds := make([]*TclObj, len(i.cmds))
 		ind := 0
 		for n, _ := range i.cmds {
-			cmds[ind] = fromStr(n)
+			cmds[ind] = FromStr(n)
 			ind++
 		}
 		return i.Return(fromList(cmds))
@@ -604,9 +604,9 @@ func tclString(i *Interp, args []*TclObj) TclStatus {
 		if ind >= len(str) {
 			return i.Return(kNil)
 		}
-		return i.Return(fromStr(str[ind : ind+1]))
+		return i.Return(FromStr(str[ind : ind+1]))
 	case "trim":
-		return i.Return(fromStr(strings.TrimSpace(str)))
+		return i.Return(FromStr(strings.TrimSpace(str)))
 	case "match":
 		if len(args) != 3 {
 			return i.FailStr("wrong # args")

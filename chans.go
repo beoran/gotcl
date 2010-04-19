@@ -43,7 +43,7 @@ func tclNewChan(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 0 {
 		return i.FailStr("wrong # args")
 	}
-	return i.Return(fromStr(makechan()))
+	return i.Return(FromStr(makechan()))
 }
 
 func tclCloseChan(i *Interp, args []*TclObj) TclStatus {

@@ -94,9 +94,10 @@ type tliteral struct {
 func (l *tliteral) String() string { return l.strval }
 func (l *tliteral) Eval(i *Interp) TclStatus {
 	if l.tval == nil {
-		l.tval = fromStr(l.strval)
+		l.tval = FromStr(l.strval)
 	}
-	return i.Return(l.tval)
+	i.retval = l.tval
+	return kTclOK
 }
 
 func (p *parser) parseSimpleWord() *tliteral {
@@ -147,7 +148,7 @@ func (b *block) String() string { return "{" + b.strval + "}" }
 
 func (b *block) Eval(i *Interp) TclStatus {
 	if b.tval == nil {
-		b.tval = fromStr(b.strval)
+		b.tval = FromStr(b.strval)
 	}
 	return i.Return(b.tval)
 }
@@ -218,7 +219,7 @@ func (t strlit) Eval(i *Interp) TclStatus {
 		}
 		res.WriteString(s)
 	}
-	return i.Return(fromStr(res.String()))
+	return i.Return(FromStr(res.String()))
 }
 
 
@@ -643,21 +644,22 @@ func (t *TclObj) asVarRef() varRef {
 	return *t.vrefval
 }
 
-func fromStr(s string) *TclObj { return &TclObj{value: &s} }
-func FromInt(i int) *TclObj    { return &TclObj{intval: &i} }
-
-func FromStr(s string) *TclObj { return fromStr(s) }
+func FromStr(s string) *TclObj {
+	return &TclObj{value: &s}
+}
+func FromInt(i int) *TclObj { return &TclObj{intval: &i} }
 
 func FromList(l []string) *TclObj {
 	vl := make([]*TclObj, len(l))
 	for i, s := range l {
-		vl[i] = fromStr(s)
+		vl[i] = FromStr(s)
 	}
 	return fromList(vl)
 }
 
 var kTrue = FromInt(1)
 var kFalse = FromInt(0)
+var kNil = FromStr("")
 
 func FromBool(b bool) *TclObj {
 	if b {
@@ -666,7 +668,6 @@ func FromBool(b bool) *TclObj {
 	return kFalse
 }
 
-var kNil = fromStr("")
 
 func fromList(items []*TclObj) *TclObj { return &TclObj{listval: items} }
 
@@ -699,7 +700,7 @@ func parseList(txt string) ([]*TclObj, os.Error) {
 	}
 	result := make([]*TclObj, len(lst))
 	for i, li := range lst {
-		result[i] = fromStr(li.String())
+		result[i] = FromStr(li.String())
 	}
 	return result, nil
 }
