@@ -297,6 +297,17 @@ func to_cmd(fni interface{}) TclCmd {
 			}
 			return i.Return(FromBool(fn(args[0], args[1])))
 		}
+	case func(*TclObj, *TclObj) (*TclObj, os.Error):
+		return func(i *Interp, args []*TclObj) TclStatus {
+			if len(args) != 2 {
+				return i.FailStr("wrong # args")
+			}
+			rv, e := fn(args[0], args[1])
+			if e != nil {
+				return i.Fail(e)
+			}
+			return i.Return(rv)
+		}
 	case func(int, int) int:
 		return func(i *Interp, args []*TclObj) TclStatus {
 			if len(args) != 2 {
@@ -741,24 +752,8 @@ func tclApply(i *Interp, args []*TclObj) TclStatus {
 var tclBasicCmds = make(map[string]TclCmd)
 
 func init() {
-	mathCmds := map[string]interface{}{
-		"+":  func(a, b int) int { return a + b },
-		"-":  func(a, b int) int { return a - b },
-		"*":  func(a, b int) int { return a * b },
-		"^":  func(a, b int) int { return a ^ b },
-		"<<": func(a, b int) int { return a << uint(b) },
-		">>": func(a, b int) int { return a >> uint(b) },
-		"||": func(a, b *TclObj) bool { return a.AsBool() || b.AsBool() },
-		"&&": func(a, b *TclObj) bool { return a.AsBool() && b.AsBool() },
-		"==": func(a, b *TclObj) bool { return a.AsString() == b.AsString() },
-		"!=": func(a, b *TclObj) bool { return a.AsString() != b.AsString() },
-		"<":  func(a, b int) bool { return a < b },
-		"<=": func(a, b int) bool { return a <= b },
-		">":  func(a, b int) bool { return a > b },
-		">=": func(a, b int) bool { return a >= b },
-	}
-	for k, v := range mathCmds {
-		tclBasicCmds[k] = to_cmd(v)
+	for _, o := range BinOps {
+		tclBasicCmds[o.name] = to_cmd(o.action)
 	}
 	initCmds := map[string]TclCmd{
 		"apply":    tclApply,

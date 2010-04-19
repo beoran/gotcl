@@ -11,10 +11,9 @@ type eterm interface {
 	Eval(*Interp) TclStatus
 }
 
-
 type binOp string
 type binOpNode struct {
-	op   binOp
+	op   *binaryOp
 	a, b eterm
 }
 
@@ -48,45 +47,12 @@ type parenNode struct {
 	term eterm
 }
 
-
 func (p *parenNode) Eval(i *Interp) TclStatus {
 	return p.term.Eval(i)
 }
 
 func (p *parenNode) String() string {
 	return p.term.String()
-}
-
-func callCmd(i *Interp, name string, args ...*TclObj) TclStatus {
-	c := i.cmds[name]
-	if c == nil {
-		return i.FailStr("Not a command: " + name)
-	}
-	return c(i, args)
-}
-
-func exprPlus(i *Interp, a, b *TclObj) TclStatus {
-	ai, bi, e := asInts(a, b)
-	if e != nil {
-		return i.Fail(e)
-	}
-	return i.Return(FromInt(ai + bi))
-}
-
-func exprMinus(i *Interp, a, b *TclObj) TclStatus {
-	ai, bi, e := asInts(a, b)
-	if e != nil {
-		return i.Fail(e)
-	}
-	return i.Return(FromInt(ai - bi))
-}
-
-func exprLt(i *Interp, a, b *TclObj) TclStatus {
-	ai, bi, e := asInts(a, b)
-	if e != nil {
-		return i.Fail(e)
-	}
-	return i.Return(FromBool(ai < bi))
 }
 
 func (bb *binOpNode) Eval(i *Interp) TclStatus {
@@ -97,28 +63,99 @@ func (bb *binOpNode) Eval(i *Interp) TclStatus {
 	if i.err != nil {
 		return i.Fail(i.err)
 	}
-	return callCmd(i, string(bb.op), a, b)
+	r, e := bb.op.action(a, b)
+	if e != nil {
+		return i.Fail(e)
+	}
+	return i.Return(r)
 }
 
 func (bb *binOpNode) String() string {
-	return "(" + string(bb.op) + " " + bb.a.String() + " " + bb.b.String() + ")"
+	return "(" + bb.op.name + " " + bb.a.String() + " " + bb.b.String() + ")"
 }
 
-
-var oplevel = map[binOp]int{
-	"*": 3, "/": 3,
-	"+": 2, "-": 2,
-	"==": 1, "!=": 1,
-	"&&": 0, "||": 0}
-
-func opgt(a, b binOp) bool {
-	al, aok := oplevel[a]
-	bl, bok := oplevel[b]
-	if !aok || !bok {
-		return false
-	}
-	return al >= bl
+type binaryOp struct {
+	name       string
+	precedence int
+	action     func(*TclObj, *TclObj) (*TclObj, os.Error)
 }
+
+var BinOps = []*binaryOp{
+	plusOp, minusOp, timesOp, xorOp, divideOp, lshiftOp, rshiftOp,
+	equalsOp, notEqualsOp, andOp, orOp, gtOp, gteOp, ltOp, lteOp,
+}
+
+var plusOp = &binaryOp{"+", 2,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromInt(i1 + i2), e
+	}}
+var minusOp = &binaryOp{"-", 2,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromInt(i1 - i2), e
+	}}
+var timesOp = &binaryOp{"*", 3,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromInt(i1 * i2), e
+	}}
+var xorOp = &binaryOp{"^", 3,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromInt(i1 ^ i2), e
+	}}
+var divideOp = &binaryOp{"*", 3,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromInt(i1 / i2), e
+	}}
+var lshiftOp = &binaryOp{"<<", 4,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromInt(i1 << uint(i2)), e
+	}}
+var rshiftOp = &binaryOp{">>", 4,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromInt(i1 >> uint(i2)), e
+	}}
+var equalsOp = &binaryOp{"==", 1,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		return FromBool(a.AsString() == b.AsString()), nil
+	}}
+var notEqualsOp = &binaryOp{"!=", 1,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		return FromBool(a.AsString() != b.AsString()), nil
+	}}
+var andOp = &binaryOp{"&&", 0,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		return FromBool(a.AsBool() && b.AsBool()), nil
+	}}
+var orOp = &binaryOp{"||", 0,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		return FromBool(a.AsBool() || b.AsBool()), nil
+	}}
+var gtOp = &binaryOp{">", -1,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromBool(i1 > i2), e
+	}}
+var gteOp = &binaryOp{">=", -1,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromBool(i1 >= i2), e
+	}}
+var ltOp = &binaryOp{"<", -1,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromBool(i1 < i2), e
+	}}
+var lteOp = &binaryOp{"<=", -1,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromBool(i1 <= i2), e
+	}}
 
 func gbalance(b eterm) eterm {
 	bb, ok := b.(*binOpNode)
@@ -130,7 +167,7 @@ func gbalance(b eterm) eterm {
 
 func balance(b *binOpNode) *binOpNode {
 	bb, ok := b.b.(*binOpNode)
-	if ok && opgt(b.op, bb.op) {
+	if ok && b.op.precedence >= bb.op.precedence {
 		return &binOpNode{bb.op, &binOpNode{b.op, gbalance(b.a), gbalance(bb.a)}, gbalance(bb.b)}
 	}
 	return b
@@ -180,77 +217,65 @@ func (p *parser) parseExprTerm() eterm {
 	return &tliteral{strval: txt}
 }
 
-func (p *parser) parseBinOp() binOp {
-	switch p.ch {
+func (p *parser) parseBinOp() *binaryOp {
+	c := p.advance()
+	switch c {
 	case '*':
-		p.advance()
-		return "*"
+		return timesOp
 	case '+':
-		p.advance()
-		return "+"
+		return plusOp
 	case '-':
-		p.advance()
-		return "-"
+		return minusOp
 	case '|':
-		p.advance()
 		p.consumeRune('|')
-		return "||"
+		return orOp
 	case 'e':
-		p.advance()
 		p.consumeRune('q')
-		return "=="
+		return equalsOp
 	case 'n':
-		p.advance()
 		p.consumeRune('e')
-		return "!="
+		return notEqualsOp
 	case '&':
-		p.advance()
 		p.consumeRune('&')
-		return "&&"
+		return andOp
 	case '^':
-		p.advance()
-		return "^"
+		return xorOp
 	case '!':
-		p.advance()
 		p.consumeRune('=')
-		return "!="
+		return notEqualsOp
 	case '=':
-		p.advance()
 		p.consumeRune('=')
-		return "=="
+		return equalsOp
 	case '>':
-		p.advance()
 		if p.ch == '=' {
 			p.advance()
-			return ">="
+			return gteOp
 		} else if p.ch == '>' {
 			p.advance()
-			return ">>"
+			return rshiftOp
 		}
-		return ">"
+		return gtOp
 	case '<':
-		p.advance()
 		if p.ch == '=' {
 			p.advance()
-			return "<="
+			return lteOp
 		} else if p.ch == '<' {
 			p.advance()
-			return "<<"
+			return lshiftOp
 		}
-		return "<"
+		return ltOp
 	case -1:
 		p.fail("EOF")
 	}
 	p.fail("expected binary operator, got " + string(p.ch))
-	return ""
+	return nil
 }
 
 func (p *parser) parseUnOpNode() *unOpNode {
 	if p.ch != '!' && p.ch != '~' {
 		p.fail("expected unary operator")
 	}
-	op := p.ch
-	p.advance()
+	op := p.advance()
 	return &unOpNode{op, p.parseExprTerm()}
 }
 
