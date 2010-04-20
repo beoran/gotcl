@@ -633,37 +633,6 @@ func tclSource(i *Interp, args []*TclObj) TclStatus {
 	return i.eval(cmds)
 }
 
-func splitWhen(s string, pred func(int) bool) []string {
-	n := 0
-	inside := false
-	for _, rune := range s {
-		was_inside := inside
-		inside := !pred(rune)
-		if inside && !was_inside {
-			n++
-		}
-	}
-	a := make([]string, n)
-	na := 0
-	start := -1
-	for i, rune := range s {
-		if pred(rune) {
-			if start >= 0 {
-				a[na] = s[start:i]
-				na++
-				start = -1
-			}
-		} else if start == -1 {
-			start = i
-		}
-	}
-	if start != -1 {
-		a[na] = s[start:]
-		na++
-	}
-	return a[0:na]
-}
-
 func oneof(s string, c int) bool {
 	for _, ch := range s {
 		if ch == c {
@@ -686,7 +655,7 @@ func tclSplit(i *Interp, args []*TclObj) TclStatus {
 		if len(chars) == 0 {
 			strs = strings.Split(sin, "", -1)
 		} else {
-			strs = splitWhen(sin,
+			strs = strings.FieldsFunc(sin,
 				func(c int) bool { return oneof(chars, c) })
 		}
 	}
