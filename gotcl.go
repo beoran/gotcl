@@ -530,7 +530,7 @@ type varEntry struct {
 	link *framelink
 }
 
-type VarMap map[string]varEntry
+type VarMap map[string]*varEntry
 
 type stackframe struct {
 	vars VarMap
@@ -843,7 +843,7 @@ func (i *Interp) LinkVar(level int, theirs, mine string) {
 		level--
 	}
 	m := i.GetVarMap(false)
-	m[mine] = varEntry{link: &framelink{theirf, theirs}}
+	m[mine] = &varEntry{link: &framelink{theirf, theirs}}
 }
 
 func (i *Interp) SetVarRaw(name string, val *TclObj) {
@@ -853,16 +853,20 @@ func (i *Interp) SetVarRaw(name string, val *TclObj) {
 func (i *Interp) SetVar(vr varRef, val *TclObj) {
 	m := i.GetVarMap(vr.is_global)
 	if val == nil {
-		m[vr.name] = varEntry{}, false
+		m[vr.name] = nil, false
 	} else {
 		n := vr.name
 		old, ok := m[n]
-		for ok && old.link != nil {
+		for ok && old != nil && old.link != nil {
 			m = old.link.frame.vars
 			n = old.link.name
 			old, ok = m[n]
 		}
-		m[n] = varEntry{obj: val}
+		if old == nil {
+			m[n] = &varEntry{obj: val}
+		} else {
+			old.obj = val
+		}
 	}
 }
 

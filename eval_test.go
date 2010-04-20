@@ -53,6 +53,10 @@ func Benchmark_ExprPlus4(b *testing.B) {
 	runCmd("", "expr { 1 + 1 + 1 + 1 + 8 }", b)
 }
 
+func Benchmark_IncrX4(b *testing.B) {
+	runCmd("set x 0", "incr x; incr x; incr x; incr x", b)
+}
+
 func Benchmark_Fib(b *testing.B) {
 	fib := `
 proc fib {n} {
