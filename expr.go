@@ -2,7 +2,6 @@ package gotcl
 
 import (
 	"os"
-	"io"
 	"unicode"
 )
 
@@ -172,7 +171,7 @@ func balance(b *binOpNode) *binOpNode {
 	return b
 }
 
-func ParseExpr(in io.Reader) (item eterm, err os.Error) {
+func ParseExpr(in RuneSource) (item eterm, err os.Error) {
 	p := newParser(in)
 	defer setError(&err)
 	item = p.parseExpr()

@@ -626,7 +626,7 @@ func tclSource(i *Interp, args []*TclObj) TclStatus {
 		return i.Fail(e)
 	}
 	defer file.Close()
-	cmds, pe := ParseCommands(file)
+	cmds, pe := ParseCommands(bufio.NewReader(file))
 	if pe != nil {
 		return i.Fail(pe)
 	}

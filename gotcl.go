@@ -11,14 +11,18 @@ import (
 	"strings"
 )
 
+type RuneSource interface {
+	ReadRune() (int, int, os.Error)
+}
+
 type parser struct {
-	data   *bufio.Reader
+	data   RuneSource
 	tmpbuf *bytes.Buffer
 	ch     int
 }
 
-func newParser(input io.Reader) *parser {
-	p := &parser{data: bufio.NewReader(input), tmpbuf: bytes.NewBuffer(make([]byte, 0, 1024))}
+func newParser(input RuneSource) *parser {
+	p := &parser{data: input, tmpbuf: bytes.NewBuffer(make([]byte, 0, 1024))}
 	p.advance()
 	return p
 }
@@ -496,14 +500,14 @@ func setError(err *os.Error) {
 	}
 }
 
-func ParseList(in io.Reader) (items []TclTok, err os.Error) {
+func ParseList(in RuneSource) (items []TclTok, err os.Error) {
 	p := newParser(in)
 	defer setError(&err)
 	items = p.parseList()
 	return
 }
 
-func ParseCommands(in io.Reader) (cmds []Command, err os.Error) {
+func ParseCommands(in RuneSource) (cmds []Command, err os.Error) {
 	p := newParser(in)
 	defer setError(&err)
 	cmds = p.parseCommands()
@@ -923,7 +927,7 @@ func (i *Interp) EvalString(s string) (*TclObj, os.Error) {
 }
 
 func (i *Interp) Run(in io.Reader) (*TclObj, os.Error) {
-	cmds, e := ParseCommands(in)
+	cmds, e := ParseCommands(bufio.NewReader(in))
 	if e != nil {
 		return nil, e
 	}
