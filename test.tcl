@@ -448,7 +448,7 @@ proc sum_to {n} {
 }
 
 puts "\nPassed $::passcount assertions."
-if { 1 == 0 } {
+if false {
     puts "\n----Benchmarks----"
 
     bench { fib 17 }
