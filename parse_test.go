@@ -103,6 +103,8 @@ func TestExprParse(t *testing.T) {
 		exprtest{`true ? "yay" : "boo"`, "yay"},
 		exprtest{`false ? "boo" : "yay"`, "yay"},
 		exprtest{"true ? false ? 0 : 1 : 0", "1"},
+		exprtest{"false ? 0 ? true : 1 : 0", "0"},
+		exprtest{"false ? 0 : true ? 99 : 0", "99"},
 	}
 	varvals := map[string]string{"foo": "42"}
 	for _, c := range cases {

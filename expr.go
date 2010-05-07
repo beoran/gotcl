@@ -221,7 +221,7 @@ func (p *parser) parseTernaryIf(cond eterm) *ternaryIfNode {
 	p.eatWhile(unicode.IsSpace)
 	p.consumeRune(':')
 	p.eatWhile(unicode.IsSpace)
-	no := p.parseExprTerm()
+	no := p.parseExpr()
 	return &ternaryIfNode{cond, yes, no}
 }
 
