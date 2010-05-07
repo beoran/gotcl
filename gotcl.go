@@ -192,7 +192,13 @@ func (p *parser) parseBlockData() string {
 	return "" // never happens.
 }
 
-func (p *parser) parseBlock() *block { return &block{strval: p.parseBlockData()} }
+func (p *parser) parseBlock() *block {
+    bd := p.parseBlockData()
+    if p.ch != -1 && !unicode.IsSpace(p.ch) && p.ch != '}' && p.ch != ']' {
+        p.fail("extra characters after close-brace")
+    }
+    return &block{strval: bd}
+}
 
 type strlit struct {
 	toks []littok
