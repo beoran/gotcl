@@ -264,20 +264,31 @@ func tclForeach(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 3 {
 		return i.FailStr("wrong # args: should be \"foreach varName list body\"")
 	}
-	vname := args[0].AsString()
 	list, err := args[1].AsList()
 	if err != nil {
 		return i.Fail(err)
 	}
 	body := args[2]
-	for _, v := range list {
-		i.SetVarRaw(vname, v)
+	vlist, err := args[0].AsList()
+	if err != nil {
+		return i.Fail(err)
+	}
+	chunksz := len(vlist)
+	if chunksz == 0 {
+		return i.FailStr("foreach varlist is empty")
+	}
+	for len(list) > 0 {
+		for ind, vn := range vlist {
+			i.SetVarRaw(vn.AsString(), list[ind])
+		}
+		list = list[chunksz:]
 		rc := i.EvalObj(body)
 		if rc == kTclBreak {
 			break
 		} else if rc != kTclOK && rc != kTclContinue {
 			return rc
 		}
+
 	}
 	return i.Return(kNil)
 }

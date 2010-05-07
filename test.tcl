@@ -292,6 +292,12 @@ test {foreach continue} {
     assert $y == yes
 }
 
+test {foreach var remains} {
+    foreach x {1 2} {
+    }
+    assert $x == 2
+}
+
 test {string length} {
     assert [string length ""] == 0
     assert [string length "xxx"] == 3
@@ -396,6 +402,12 @@ test {expr} {
     assert [expr { 1 << 2 }] == 4
     assert [expr { 4 >> 2 }] == 1
     assert [expr { ~0 }] == -1
+}
+
+test {foreach trick} {
+    foreach { a b } { 1 2 } break
+    assert $a == 1
+    assert $b == 2
 }
 
 proc fib {n} {
