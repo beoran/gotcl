@@ -166,7 +166,9 @@ func gbalance(b eterm) eterm {
 func balance(b *binOpNode) *binOpNode {
 	bb, ok := b.b.(*binOpNode)
 	if ok && b.op.precedence >= bb.op.precedence {
-		return &binOpNode{bb.op, &binOpNode{b.op, gbalance(b.a), gbalance(bb.a)}, gbalance(bb.b)}
+		return &binOpNode{bb.op,
+			&binOpNode{b.op, gbalance(b.a), gbalance(bb.a)},
+			gbalance(bb.b)}
 	}
 	return b
 }
@@ -185,9 +187,43 @@ func (p *parser) parseExpr() eterm {
 		if p.ch == ')' {
 			return res
 		}
+		if p.ch == '?' {
+			return p.parseTernaryIf(res)
+		}
 		return p.parseBinOpNode(res)
 	}
 	return res
+}
+
+type ternaryIfNode struct {
+	cond, yes, no eterm
+}
+
+func (ti *ternaryIfNode) Eval(i *Interp) TclStatus {
+	rc := ti.cond.Eval(i)
+	if rc != kTclOK {
+		return rc
+	}
+	v := i.retval
+	if v.AsBool() {
+		return ti.yes.Eval(i)
+	}
+	return ti.no.Eval(i)
+}
+
+func (ti *ternaryIfNode) String() string {
+	return ti.cond.String() + " ? " + ti.yes.String() + " : " + ti.no.String()
+}
+
+func (p *parser) parseTernaryIf(cond eterm) *ternaryIfNode {
+	p.consumeRune('?')
+	p.eatWhile(unicode.IsSpace)
+	yes := p.parseExprTerm()
+	p.eatWhile(unicode.IsSpace)
+	p.consumeRune(':')
+	p.eatWhile(unicode.IsSpace)
+	no := p.parseExprTerm()
+	return &ternaryIfNode{cond, yes, no}
 }
 
 func istermchar(c int) bool {

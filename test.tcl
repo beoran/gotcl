@@ -404,6 +404,11 @@ test {expr} {
     assert [expr { ~0 }] == -1
 }
 
+test {expr ternary if} {
+    assert [expr { false ? 11 : 44 }] == 44
+    assert [expr { (99 == 99) ? "yay" : "boo" }] == "yay"
+}
+
 test {foreach trick} {
     foreach { a b } { 1 2 } break
     assert $a == 1
