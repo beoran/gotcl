@@ -67,18 +67,22 @@ func (p *parser) consumeWhile1(fn func(int) bool, desc string) string {
 	}
 	res := p.tmpbuf.String()
 	if len(res) == 0 {
-		got := string(p.ch)
-		if p.ch == -1 {
-			got = "EOF"
-		}
-		p.fail("expected " + desc + ", got " + got)
+		p.expectFailed(desc, p.ch)
 	}
 	return res
 }
 
+func (p *parser) expectFailed(expected string, ch int) {
+	got := "EOF"
+	if ch != -1 {
+		got = string(ch)
+	}
+	p.fail("Expected " + expected + ", got '" + got + "'")
+}
+
 func (p *parser) consumeRune(rune int) {
 	if p.ch != rune {
-		p.fail("Didn't start with " + string(rune) + " (" + string(p.ch) + ")")
+		p.expectFailed("'"+string(rune)+"'", p.ch)
 	}
 	p.advance()
 }
@@ -124,11 +128,7 @@ func (p *parser) parseSimpleWord() *tliteral {
 	}
 	res := p.tmpbuf.String()
 	if len(res) == 0 {
-		got := "EOF"
-		if p.ch != -1 {
-			got = string(p.ch)
-		}
-		p.fail("expected word, got " + got)
+		p.expectFailed("word", p.ch)
 	}
 	return &tliteral{strval: res}
 }
@@ -399,7 +399,7 @@ func isEol(ch int) bool {
 func (p *parser) eatExtra() {
 	p.eatWhile(unicode.IsSpace)
 	for p.ch == ';' {
-		p.consumeRune(';')
+		p.advance()
 		p.eatWhile(unicode.IsSpace)
 	}
 }

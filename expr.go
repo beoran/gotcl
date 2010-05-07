@@ -183,13 +183,12 @@ func ParseExpr(in RuneSource) (item eterm, err os.Error) {
 func (p *parser) parseExpr() eterm {
 	res := p.parseExprTerm()
 	p.eatWhile(unicode.IsSpace)
-	if p.ch != -1 {
-		if p.ch == ')' {
-			return res
-		}
-		if p.ch == '?' {
-			return p.parseTernaryIf(res)
-		}
+	switch p.ch {
+	case '?':
+		return p.parseTernaryIf(res)
+	case -1, ')', ':':
+		break
+	default:
 		return p.parseBinOpNode(res)
 	}
 	return res
@@ -218,7 +217,7 @@ func (ti *ternaryIfNode) String() string {
 func (p *parser) parseTernaryIf(cond eterm) *ternaryIfNode {
 	p.consumeRune('?')
 	p.eatWhile(unicode.IsSpace)
-	yes := p.parseExprTerm()
+	yes := p.parseExpr()
 	p.eatWhile(unicode.IsSpace)
 	p.consumeRune(':')
 	p.eatWhile(unicode.IsSpace)
@@ -301,21 +300,19 @@ func (p *parser) parseBinOp() *binaryOp {
 	case -1:
 		p.fail("EOF")
 	}
-	p.fail("expected binary operator, got " + string(p.ch))
+	p.expectFailed("binary operator", c)
 	return nil
 }
 
 func (p *parser) parseUnOpNode() *unOpNode {
 	if p.ch != '!' && p.ch != '~' {
-		p.fail("expected unary operator")
+		p.expectFailed("unary operator", p.ch)
 	}
-	op := p.advance()
-	return &unOpNode{op, p.parseExprTerm()}
+	return &unOpNode{p.advance(), p.parseExprTerm()}
 }
 
 func (p *parser) parseBinOpNode(a eterm) *binOpNode {
-	op := p.parseBinOp()
-	return balance(&binOpNode{op, a, p.parseExpr()})
+	return balance(&binOpNode{p.parseBinOp(), a, p.parseExpr()})
 }
 
 func tclExpr(i *Interp, args []*TclObj) TclStatus {
