@@ -42,10 +42,10 @@ func TestCommandParsing(t *testing.T) {
 }
 
 func TestCloseBraceExtra(t *testing.T) {
-    _, e := ParseCommands(strings.NewReader("if { 1 == 1 }{ puts oh }"))
-    if e == nil {
-        t.Errorf("Expected error, didn't get one.")
-    }
+	_, e := ParseCommands(strings.NewReader("if { 1 == 1 }{ puts oh }"))
+	if e == nil {
+		t.Errorf("Expected error, didn't get one.")
+	}
 }
 
 func testExpr(t *testing.T, vvals map[string]string, et exprtest) {

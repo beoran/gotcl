@@ -299,6 +299,10 @@ func asInts(a *TclObj, b *TclObj) (ai int, bi int, e os.Error) {
 	return
 }
 
+func MakeCmd(fni interface{}) TclCmd {
+	return to_cmd(fni)
+}
+
 func to_cmd(fni interface{}) TclCmd {
 	switch fn := fni.(type) {
 	case func(*TclObj, *TclObj) bool:
@@ -318,6 +322,25 @@ func to_cmd(fni interface{}) TclCmd {
 				return i.Fail(e)
 			}
 			return i.Return(rv)
+		}
+	case func(s string):
+		return func(it *Interp, args []*TclObj) TclStatus {
+			fn(args[0].AsString())
+			return it.Return(kNil)
+		}
+	case func(int):
+		return func(it *Interp, args []*TclObj) TclStatus {
+			nv, _ := args[0].AsInt()
+			fn(nv)
+			return it.Return(kNil)
+		}
+	case func(s string) os.Error:
+		return func(it *Interp, args []*TclObj) TclStatus {
+			e := fn(args[0].AsString())
+			if e != nil {
+				return it.Fail(e)
+			}
+			return it.Return(kNil)
 		}
 	case func(int, int) int:
 		return func(i *Interp, args []*TclObj) TclStatus {
