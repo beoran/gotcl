@@ -31,13 +31,6 @@ func issepspace(c int) bool { return c == '\t' || c == ' ' }
 func isvarword(c int) bool {
 	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
 }
-func isword(c int) bool {
-	switch c {
-	case '[', ']', ';', '$', '"':
-		return false
-	}
-	return !unicode.IsSpace(c)
-}
 
 func (p *parser) fail(s string) {
 	panic(os.NewError(s))
@@ -107,6 +100,13 @@ func (l *tliteral) Eval(i *Interp) TclStatus {
 	return kTclOK
 }
 
+func isword(c int) bool {
+	switch c {
+	case '[', ']', ';', '$', '"':
+		return false
+	}
+	return !unicode.IsSpace(c)
+}
 func (p *parser) parseSimpleWord() *tliteral {
 	p.tmpbuf.Reset()
 	prev_esc := false
@@ -243,7 +243,13 @@ func (p *parser) parseVarRef() varRef {
 		p.consumeRune(':')
 		global = true
 	}
-	return varRef{is_global: global, name: p.consumeWhile1(isvarword, "variable name")}
+	name := p.consumeWhile1(isvarword, "variable name")
+	if p.ch == '(' {
+		p.advance()
+		p.parseToken()
+		p.fail("arrays not yet supported")
+	}
+	return varRef{is_global: global, name: name}
 }
 
 type varRef struct {
@@ -924,6 +930,9 @@ func (i *Interp) evalCmd(cmd Command) TclStatus {
 	fname := args[0].AsString()
 	if f, ok := i.cmds[fname]; ok {
 		return f(i, args[1:])
+	}
+	if f, ok := i.cmds["unknown"]; ok {
+		return f(i, args)
 	}
 	return i.FailStr("command not found: " + fname)
 }
