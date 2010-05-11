@@ -572,6 +572,16 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(FromStr(str))
 }
 
+func getVarNameList(m VarMap) *TclObj {
+	results := make([]*TclObj, len(m))
+	ind := 0
+	for vn, _ := range m {
+		results[ind] = FromStr(vn)
+		ind++
+	}
+	return fromList(results)
+}
+
 func tclInfo(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
 		return i.FailStr("wrong # args")
@@ -592,14 +602,7 @@ func tclInfo(i *Interp, args []*TclObj) TclStatus {
 		if len(args) != 1 {
 			return i.FailStr("wrong # args")
 		}
-		m := i.GetVarMap(true)
-		results := make([]*TclObj, len(m))
-		ind := 0
-		for vn, _ := range m {
-			results[ind] = FromStr(vn)
-			ind++
-		}
-		return i.Return(fromList(results))
+		return i.Return(getVarNameList(i.GetVarMap(true)))
 	case "commands":
 		if len(args) != 1 {
 			return i.FailStr("wrong # args")
@@ -611,7 +614,8 @@ func tclInfo(i *Interp, args []*TclObj) TclStatus {
 			ind++
 		}
 		return i.Return(fromList(cmds))
-
+	case "vars":
+		return i.Return(getVarNameList(i.GetVarMap(false)))
 	}
 	return i.FailStr("bad option \"" + option + "\"")
 }
