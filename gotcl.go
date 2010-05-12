@@ -492,7 +492,6 @@ func (p *parser) parseCommand() Command {
 }
 
 func (p *parser) parseToken() TclTok {
-	p.eatWhile(unicode.IsSpace)
 	switch p.ch {
 	case '[':
 		return p.parseSubcommand()
