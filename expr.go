@@ -3,6 +3,8 @@ package gotcl
 import (
 	"os"
 	"unicode"
+	"container/vector"
+	"rand"
 )
 
 type eterm interface {
@@ -18,6 +20,72 @@ type binOpNode struct {
 type unOpNode struct {
 	op int
 	v  eterm
+}
+
+type funcNode struct {
+	name string
+	args []eterm
+}
+
+type exprFunc struct {
+	argmin, argmax int
+	fn             TclCmd
+}
+
+
+func binOpPick(op *binaryOp) TclCmd {
+	return func(i *Interp, args []*TclObj) TclStatus {
+		mval := args[0]
+		for _, v := range args[1:] {
+			is_lt, e := op.action(v, mval)
+			if e != nil {
+				return i.Fail(e)
+			}
+			if is_lt.AsBool() {
+				mval = v
+			}
+		}
+		return i.Return(mval)
+	}
+}
+
+
+func randFn(i *Interp, args []*TclObj) TclStatus {
+	return i.Return(FromInt(rand.Int()))
+}
+
+var mathFuncs = map[string]*exprFunc{
+	"min":  &exprFunc{1, 100, binOpPick(ltOp)},
+	"max":  &exprFunc{1, 100, binOpPick(gtOp)},
+	"rand": &exprFunc{0, 0, randFn},
+}
+
+func (f *funcNode) Eval(i *Interp) TclStatus {
+	fn, ok := mathFuncs[f.name]
+	if !ok {
+		return i.FailStr("unknown function: \"" + f.name + "\"")
+	}
+	if len(f.args) < fn.argmin || len(f.args) > fn.argmax {
+		return i.FailStr("wrong # args")
+	}
+	args := make([]*TclObj, len(f.args))
+	for ix, a := range f.args {
+		rc := a.Eval(i)
+		if rc != kTclOK {
+			return rc
+		}
+		args[ix] = i.retval
+	}
+	return fn.fn(i, args)
+}
+
+func (f *funcNode) String() string {
+	ret := "(" + f.name
+	for _, v := range f.args {
+		ret += " "
+		ret += v.String()
+	}
+	return ret + ")"
 }
 
 func (u *unOpNode) String() string {
@@ -247,7 +315,30 @@ func (p *parser) parseExprTerm() eterm {
 		return p.parseSubcommand()
 	}
 	txt := p.consumeWhile1(istermchar, "term")
+	if p.ch == '(' {
+		return p.parseFunc(txt)
+	}
 	return &tliteral{strval: txt}
+}
+
+func (p *parser) parseFunc(name string) *funcNode {
+	p.consumeRune('(')
+	p.eatWhile(unicode.IsSpace)
+	var argsvec vector.Vector
+	for p.ch != ')' {
+		argsvec.Push(p.parseExprTerm())
+		p.eatWhile(unicode.IsSpace)
+		if p.ch == ',' {
+			p.advance()
+			p.eatWhile(unicode.IsSpace)
+		}
+	}
+	fargs := make([]eterm, argsvec.Len())
+	for i, v := range argsvec.Data() {
+		fargs[i] = v.(eterm)
+	}
+	p.advance()
+	return &funcNode{name: name, args: fargs}
 }
 
 func (p *parser) parseBinOp() *binaryOp {

@@ -112,6 +112,10 @@ func TestExprParse(t *testing.T) {
 		exprtest{"true ? false ? 0 : 1 : 0", "1"},
 		exprtest{"false ? 0 ? true : 1 : 0", "0"},
 		exprtest{"false ? 0 : true ? 99 : 0", "99"},
+		exprtest{"min(1,10)", "1"},
+		exprtest{"min(100, 44)", "44"},
+		exprtest{"max(100, 44)", "100"},
+		exprtest{"max(2, 100, 44, 11)", "100"},
 	}
 	varvals := map[string]string{"foo": "42"}
 	for _, c := range cases {
