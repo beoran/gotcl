@@ -107,10 +107,10 @@ func isword(c int) bool {
 	}
 	return !unicode.IsSpace(c)
 }
-func (p *parser) parseSimpleWord() *tliteral {
+func (p *parser) parseSimpleWordTil(til int) *tliteral {
 	p.tmpbuf.Reset()
 	prev_esc := false
-	for p.ch != -1 {
+	for p.ch != -1 && p.ch != til {
 		if p.ch == '\\' && !prev_esc {
 			prev_esc = true
 			p.advance()
@@ -244,17 +244,19 @@ func (p *parser) parseVarRef() varRef {
 		global = true
 	}
 	name := p.consumeWhile1(isvarword, "variable name")
+	var ind TclTok
 	if p.ch == '(' {
 		p.advance()
-		p.parseToken()
-		p.fail("arrays not yet supported")
+		ind = p.parseTokenTil(')')
+		p.consumeRune(')')
 	}
-	return varRef{is_global: global, name: name}
+	return varRef{is_global: global, name: name, arrind: ind}
 }
 
 type varRef struct {
 	is_global bool
 	name      string
+	arrind    TclTok
 }
 
 func (v varRef) Eval(i *Interp) TclStatus {
@@ -492,6 +494,10 @@ func (p *parser) parseCommand() Command {
 }
 
 func (p *parser) parseToken() TclTok {
+	return p.parseTokenTil(-1)
+}
+
+func (p *parser) parseTokenTil(til int) TclTok {
 	switch p.ch {
 	case '[':
 		return p.parseSubcommand()
@@ -502,7 +508,7 @@ func (p *parser) parseToken() TclTok {
 	case '$':
 		return p.parseVarRef()
 	}
-	return p.parseSimpleWord()
+	return p.parseSimpleWordTil(til)
 }
 
 func setError(err *os.Error) {
