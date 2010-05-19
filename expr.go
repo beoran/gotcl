@@ -254,7 +254,7 @@ func (p *parser) parseExpr() eterm {
 	switch p.ch {
 	case '?':
 		return p.parseTernaryIf(res)
-	case -1, ')', ':':
+	case -1, ')', ':', ',':
 		break
 	default:
 		return p.parseBinOpNode(res)
@@ -326,7 +326,7 @@ func (p *parser) parseFunc(name string) *funcNode {
 	p.eatWhile(unicode.IsSpace)
 	var argsvec vector.Vector
 	for p.ch != ')' {
-		argsvec.Push(p.parseExprTerm())
+		argsvec.Push(p.parseExpr())
 		p.eatWhile(unicode.IsSpace)
 		if p.ch == ',' {
 			p.advance()
