@@ -54,10 +54,24 @@ func randFn(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(FromInt(rand.Int()))
 }
 
+func powFn(i *Interp, args []*TclObj) TclStatus {
+	res := 1
+	x, y, e := asInts(args[0], args[1])
+	if e != nil {
+		return i.Fail(e)
+	}
+	for y > 0 {
+		res *= x
+		y--
+	}
+	return i.Return(FromInt(res))
+}
+
 var mathFuncs = map[string]*exprFunc{
 	"min":  &exprFunc{1, 100, binOpPick(ltOp)},
 	"max":  &exprFunc{1, 100, binOpPick(gtOp)},
 	"rand": &exprFunc{0, 0, randFn},
+	"pow":  &exprFunc{2, 2, powFn},
 }
 
 func (f *funcNode) Eval(i *Interp) TclStatus {

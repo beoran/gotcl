@@ -534,11 +534,11 @@ func ParseCommands(in RuneSource) (cmds []Command, err os.Error) {
 type TclStatus int
 
 const (
-	kTclOK       TclStatus = iota
-	kTclErr      TclStatus = iota
-	kTclReturn   TclStatus = iota
-	kTclBreak    TclStatus = iota
-	kTclContinue TclStatus = iota
+	kTclOK TclStatus = iota
+	kTclErr
+	kTclReturn
+	kTclBreak
+	kTclContinue
 )
 
 type framelink struct {
