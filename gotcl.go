@@ -6,7 +6,6 @@ import (
 	"io"
 	"unicode"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -334,23 +333,13 @@ func (lt *littok) EvalStr(i *Interp) (string, TclStatus) {
 	panic("unrecognized kind")
 }
 
-func realloc_slice(sl interface{}, newcap int) interface{} {
-	s := reflect.NewValue(sl).(*reflect.SliceValue)
-	if newcap <= s.Cap() {
-		return sl
-	}
-	t := reflect.Typeof(sl).(*reflect.SliceType)
-	nv := reflect.MakeSlice(t, s.Len(), newcap)
-	reflect.ArrayCopy(nv, s)
-	s.Set(nv)
-	return s.Interface()
-}
-
 func appendtok(tx *[]littok, t littok) {
 	oldlen := len(*tx)
 	if oldlen == cap(*tx) {
-		newcap := (cap(*tx) + 1) * 2
-		*tx = realloc_slice(*tx, newcap).([]littok)
+		newcap := 1 + (cap(*tx) + 1) * 2
+        newsl := make([]littok, oldlen, newcap)
+        copy(newsl, *tx)
+        *tx = newsl
 	}
 	*tx = (*tx)[0 : oldlen+1]
 	(*tx)[oldlen] = t
@@ -426,15 +415,17 @@ func (p *parser) parseComment() {
 func appendcmd(tx *[]Command, t Command) {
 	oldlen := len(*tx)
 	if oldlen == cap(*tx) {
-		newcap := (cap(*tx) + 1) * 2
-		*tx = realloc_slice(*tx, newcap).([]Command)
+		newcap := 1 + (cap(*tx) + 1) * 2
+        newsl := make([]Command, oldlen, newcap)
+        copy(newsl, *tx)
+        *tx = newsl
 	}
 	*tx = (*tx)[0 : oldlen+1]
 	(*tx)[oldlen] = t
 }
 
 func (p *parser) parseCommands() []Command {
-	res := make([]Command, 0, 32)
+	res := make([]Command, 0, 128)
 	p.eatWhile(unicode.IsSpace)
 	for p.ch != -1 {
 		if p.ch == '#' {
@@ -450,8 +441,9 @@ func (p *parser) parseCommands() []Command {
 func appendttok(tx *[]TclTok, t TclTok) {
 	oldlen := len(*tx)
 	if oldlen == cap(*tx) {
-		newcap := (cap(*tx) + 1) * 2
-		*tx = realloc_slice(*tx, newcap).([]TclTok)
+        newsl := make([]TclTok, oldlen, (cap(*tx) + 1) * 2)
+        copy(newsl, *tx)
+        *tx = newsl
 	}
 	*tx = (*tx)[0 : oldlen+1]
 	(*tx)[oldlen] = t

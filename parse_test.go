@@ -173,7 +173,7 @@ func BenchmarkNoopParse(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		nlcount := 0
-		reader := bufio.NewReader(bytes.NewBuffer(data))
+		var reader RuneSource = bufio.NewReader(bytes.NewBuffer(data))
 		done := false
 		for !done {
 			r, _, e := reader.ReadRune()
