@@ -336,10 +336,10 @@ func (lt *littok) EvalStr(i *Interp) (string, TclStatus) {
 func appendtok(tx *[]littok, t littok) {
 	oldlen := len(*tx)
 	if oldlen == cap(*tx) {
-		newcap := 1 + (cap(*tx) + 1) * 2
-        newsl := make([]littok, oldlen, newcap)
-        copy(newsl, *tx)
-        *tx = newsl
+		newcap := 1 + (cap(*tx)+1)*2
+		newsl := make([]littok, oldlen, newcap)
+		copy(newsl, *tx)
+		*tx = newsl
 	}
 	*tx = (*tx)[0 : oldlen+1]
 	(*tx)[oldlen] = t
@@ -415,10 +415,10 @@ func (p *parser) parseComment() {
 func appendcmd(tx *[]Command, t Command) {
 	oldlen := len(*tx)
 	if oldlen == cap(*tx) {
-		newcap := 1 + (cap(*tx) + 1) * 2
-        newsl := make([]Command, oldlen, newcap)
-        copy(newsl, *tx)
-        *tx = newsl
+		newcap := 1 + (cap(*tx)+1)*2
+		newsl := make([]Command, oldlen, newcap)
+		copy(newsl, *tx)
+		*tx = newsl
 	}
 	*tx = (*tx)[0 : oldlen+1]
 	(*tx)[oldlen] = t
@@ -441,9 +441,9 @@ func (p *parser) parseCommands() []Command {
 func appendttok(tx *[]TclTok, t TclTok) {
 	oldlen := len(*tx)
 	if oldlen == cap(*tx) {
-        newsl := make([]TclTok, oldlen, (cap(*tx) + 1) * 2)
-        copy(newsl, *tx)
-        *tx = newsl
+		newsl := make([]TclTok, oldlen, (cap(*tx)+1)*2)
+		copy(newsl, *tx)
+		*tx = newsl
 	}
 	*tx = (*tx)[0 : oldlen+1]
 	(*tx)[oldlen] = t
