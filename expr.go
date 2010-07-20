@@ -348,7 +348,7 @@ func (p *parser) parseFunc(name string) *funcNode {
 		}
 	}
 	fargs := make([]eterm, argsvec.Len())
-	for i, v := range argsvec.Data() {
+	for i, v := range argsvec {
 		fargs[i] = v.(eterm)
 	}
 	p.advance()

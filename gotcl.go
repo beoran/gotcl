@@ -58,7 +58,7 @@ func (p *parser) consumeWhile1(fn func(int) bool, desc string) string {
 		p.tmpbuf.WriteRune(p.advance())
 	}
 	res := p.tmpbuf.String()
-	if len(res) == 0 {
+	if res == "" {
 		p.expectFailed(desc, p.ch)
 	}
 	return res
