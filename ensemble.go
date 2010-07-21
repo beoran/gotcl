@@ -25,10 +25,10 @@ func (e Ensemble) Run(cmd string, i *Interp, args []*TclObj) TclStatus {
 		return c(i, args)
 	}
 	sv := make([]string, len(e))
-    ind := 0
+	ind := 0
 	for k := range e {
 		sv[ind] = k
-        ind++
+		ind++
 	}
 	return i.FailStr(fmt.Sprintf("unknown or ambiguous subcommand \"%s\". Must be %s.", cmd, formatNames(sv)))
 }

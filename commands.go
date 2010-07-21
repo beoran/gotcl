@@ -469,7 +469,6 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 	vname := args[0].AsString()
 	v, ve := i.GetVarRaw(vname)
 	if ve != nil {
-		i.ClearError()
 		v = fromList(make([]*TclObj, 0, 10))
 	}
 	items, err := v.AsList()
@@ -638,9 +637,6 @@ func exists(i *Interp, args []*TclObj) TclStatus {
 	}
 	vname := args[0].AsString()
 	_, err := i.GetVarRaw(vname)
-	if err != nil {
-		i.ClearError()
-	}
 	return i.Return(FromBool(err == nil))
 }
 
