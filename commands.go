@@ -1,14 +1,14 @@
 package gotcl
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io"
-	"time"
 	"os"
-	"bytes"
-	"bufio"
-	"utf8"
 	"strings"
+	"time"
+	"utf8"
 )
 
 func tclSet(i *Interp, args []*TclObj) TclStatus {
@@ -136,8 +136,15 @@ func tclCatch(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args to catch")
 	}
 	r := i.EvalObj(args[0])
-	if len(args) == 2 && r == kTclErr {
-		i.SetVarRaw(args[1].AsString(), FromStr(i.err.String()))
+	if len(args) == 2 {
+		vname := args[1].AsString()
+		val := kNil
+		if r == kTclErr {
+			val = FromStr(i.err.String())
+		} else if r == kTclOK {
+			val = i.retval
+		}
+		i.SetVarRaw(vname, val)
 	}
 	i.ClearError()
 	return i.Return(FromInt(int(r)))

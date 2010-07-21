@@ -1,6 +1,7 @@
 proc eval_printer {ch} {
     forchan exp $ch {
-        puts [expr $exp]
+        catch {expr $exp} res
+        puts $res
     }
 }
 

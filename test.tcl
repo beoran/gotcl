@@ -195,6 +195,12 @@ test unset_test {
     assert [catch { puts $foo }] == 1
 }
 
+test {catch sets resultvar} {
+    catch { expr { 3 + 4 } } woozle
+    assert [info exists woozle] == 1
+    assert $woozle == 7
+}
+
 test test_time {
     set x 0
     time { set x [+ $x 1] } 4
