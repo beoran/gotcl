@@ -305,6 +305,8 @@ func MakeCmd(fni interface{}) TclCmd {
 
 func to_cmd(fni interface{}) TclCmd {
 	switch fn := fni.(type) {
+	case func(*Interp, []*TclObj) TclStatus:
+		return fn
 	case func(*TclObj, *TclObj) bool:
 		return func(i *Interp, args []*TclObj) TclStatus {
 			if len(args) != 2 {
@@ -620,18 +622,18 @@ func getVarNameList(m VarMap) *TclObj {
 	return fromList(results)
 }
 
-var infoEn = Ensemble{
-	"exists": exists,
-	"vars": to_cmd(func(i *Interp) *TclObj {
+var infoEn = EnsembleSpec{
+	"exists": varExists,
+	"vars": func(i *Interp) *TclObj {
 		return getVarNameList(i.GetVarMap(false))
-	}),
-	"globals": to_cmd(func(i *Interp) *TclObj {
+	},
+	"globals": func(i *Interp) *TclObj {
 		return getVarNameList(i.GetVarMap(true))
-	}),
-	"commands": to_cmd(getCmdNames),
+	},
+	"commands": getCmdNames,
 }
 
-func exists(i *Interp, args []*TclObj) TclStatus {
+func varExists(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
 		return i.FailStr("wrong # args")
 	}
@@ -650,11 +652,11 @@ func getCmdNames(i *Interp) *TclObj {
 	return fromList(cmds)
 }
 
-var stringEn = Ensemble{
-	"length":     to_cmd(utf8.RuneCountInString),
-	"bytelength": to_cmd(func(s string) int { return len(s) }),
-	"trim":       to_cmd(strings.TrimSpace),
-	"match":      to_cmd(GlobMatch),
+var stringEn = EnsembleSpec{
+	"length":     utf8.RuneCountInString,
+	"bytelength": func(s string) int { return len(s) },
+	"trim":       strings.TrimSpace,
+	"match":      GlobMatch,
 	"index":      strIndex,
 }
 

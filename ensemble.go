@@ -17,9 +17,22 @@ func formatNames(sv []string) string {
 	return strings.Join(sv[0:len(sv)-1], ", ") + ", or " + sv[len(sv)-1]
 }
 
-type Ensemble map[string]TclCmd
+type EnsembleSpec map[string]interface{}
 
-func (e Ensemble) Run(cmd string, i *Interp, args []*TclObj) TclStatus {
+func (es EnsembleSpec) MakeCmd() TclCmd {
+	cmds := make(map[string]TclCmd, len(es))
+	for k, v := range es {
+		cmds[k] = to_cmd(v)
+	}
+	return func(i *Interp, args []*TclObj) TclStatus {
+		if len(args) == 0 {
+			return i.FailStr("wrong # args")
+		}
+		return doEnsemble(cmds, args[0].AsString(), i, args[1:])
+	}
+}
+
+func doEnsemble(e map[string]TclCmd, cmd string, i *Interp, args []*TclObj) TclStatus {
 	c, ok := e[cmd]
 	if ok {
 		return c(i, args)
@@ -30,14 +43,6 @@ func (e Ensemble) Run(cmd string, i *Interp, args []*TclObj) TclStatus {
 		sv[ind] = k
 		ind++
 	}
-	return i.FailStr(fmt.Sprintf("unknown or ambiguous subcommand \"%s\". Must be %s.", cmd, formatNames(sv)))
-}
-
-func (e Ensemble) MakeCmd() TclCmd {
-	return func(i *Interp, args []*TclObj) TclStatus {
-		if len(args) == 0 {
-			return i.FailStr("wrong # args")
-		}
-		return e.Run(args[0].AsString(), i, args[1:])
-	}
+	return i.FailStr(
+		fmt.Sprintf("unknown or ambiguous subcommand \"%s\". Must be %s.", cmd, formatNames(sv)))
 }
