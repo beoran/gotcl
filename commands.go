@@ -312,6 +312,15 @@ func to_cmd(fni interface{}) TclCmd {
 			}
 			return i.Return(FromBool(fn(args[0], args[1])))
 		}
+	case func(*Interp) *TclObj:
+		return func(i *Interp, args []*TclObj) TclStatus {
+			if len(args) != 0 {
+				return i.FailStr("wrong # args")
+			}
+			v := fn(i)
+			return i.Return(v)
+		}
+
 	case func(*TclObj, *TclObj) (*TclObj, os.Error):
 		return func(i *Interp, args []*TclObj) TclStatus {
 			if len(args) != 2 {
@@ -323,19 +332,49 @@ func to_cmd(fni interface{}) TclCmd {
 			}
 			return i.Return(rv)
 		}
-	case func(s string):
+	case func(string):
 		return func(it *Interp, args []*TclObj) TclStatus {
+			if len(args) != 1 {
+				return it.FailStr("wrong # args")
+			}
 			fn(args[0].AsString())
 			return it.Return(kNil)
 		}
+	case func(string) int:
+		return func(it *Interp, args []*TclObj) TclStatus {
+			if len(args) != 1 {
+				return it.FailStr("wrong # args")
+			}
+			return it.Return(FromInt(fn(args[0].AsString())))
+		}
+	case func(string) string:
+		return func(it *Interp, args []*TclObj) TclStatus {
+			if len(args) != 1 {
+				return it.FailStr("wrong # args")
+			}
+			return it.Return(FromStr(fn(args[0].AsString())))
+		}
 	case func(int):
 		return func(it *Interp, args []*TclObj) TclStatus {
+			if len(args) != 1 {
+				return it.FailStr("wrong # args")
+			}
 			nv, _ := args[0].AsInt()
 			fn(nv)
 			return it.Return(kNil)
 		}
-	case func(s string) os.Error:
+	case func(string, string) bool:
 		return func(it *Interp, args []*TclObj) TclStatus {
+			if len(args) != 2 {
+				return it.FailStr("wrong # args")
+			}
+			return it.Return(FromBool(fn(args[0].AsString(), args[1].AsString())))
+		}
+	case func(string) os.Error:
+		return func(it *Interp, args []*TclObj) TclStatus {
+			if len(args) != 1 {
+				return it.FailStr("wrong # args")
+			}
 			e := fn(args[0].AsString())
 			if e != nil {
 				return it.Fail(e)
@@ -582,76 +621,60 @@ func getVarNameList(m VarMap) *TclObj {
 	return fromList(results)
 }
 
-func tclInfo(i *Interp, args []*TclObj) TclStatus {
-	if len(args) == 0 {
-		return i.FailStr("wrong # args")
-	}
-	option := args[0].AsString()
-	switch option {
-	case "exists":
-		if len(args) != 2 {
-			return i.FailStr("wrong # args")
-		}
-		vname := args[1].AsString()
-		_, err := i.GetVarRaw(vname)
-		if err != nil {
-			i.ClearError()
-		}
-		return i.Return(FromBool(err == nil))
-	case "globals":
-		if len(args) != 1 {
-			return i.FailStr("wrong # args")
-		}
-		return i.Return(getVarNameList(i.GetVarMap(true)))
-	case "commands":
-		if len(args) != 1 {
-			return i.FailStr("wrong # args")
-		}
-		cmds := make([]*TclObj, len(i.cmds))
-		ind := 0
-		for n, _ := range i.cmds {
-			cmds[ind] = FromStr(n)
-			ind++
-		}
-		return i.Return(fromList(cmds))
-	case "vars":
-		return i.Return(getVarNameList(i.GetVarMap(false)))
-	}
-	return i.FailStr("bad option \"" + option + "\"")
+var infoEn = Ensemble{
+	"exists": exists,
+	"vars": to_cmd(func(i *Interp) *TclObj {
+		return getVarNameList(i.GetVarMap(false))
+	}),
+	"globals": to_cmd(func(i *Interp) *TclObj {
+		return getVarNameList(i.GetVarMap(true))
+	}),
+	"commands": to_cmd(getCmdNames),
 }
 
-func tclString(i *Interp, args []*TclObj) TclStatus {
-	if len(args) < 2 {
+func exists(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 1 {
 		return i.FailStr("wrong # args")
 	}
-	cmd := args[0].AsString()
-	str := args[1].AsString()
-	switch cmd {
-	case "bytelength":
-		return i.Return(FromInt(len(str)))
-	case "length":
-		return i.Return(FromInt(utf8.RuneCountInString(str)))
-	case "index":
-		if len(args) != 3 {
-			return i.FailStr("wrong # args")
-		}
-		ind, e := args[2].AsInt()
-		if e != nil {
-			return i.Fail(e)
-		}
-		if ind >= len(str) {
-			return i.Return(kNil)
-		}
-		return i.Return(FromStr(str[ind : ind+1]))
-	case "trim":
-		return i.Return(FromStr(strings.TrimSpace(str)))
-	case "match":
-		if len(args) != 3 {
-			return i.FailStr("wrong # args")
-		}
-		return i.Return(FromBool(GlobMatch(str, args[2].AsString())))
+	vname := args[0].AsString()
+	_, err := i.GetVarRaw(vname)
+	if err != nil {
+		i.ClearError()
 	}
-	return i.FailStr("bad option to \"string\": " + cmd)
+	return i.Return(FromBool(err == nil))
+}
+
+func getCmdNames(i *Interp) *TclObj {
+	cmds := make([]*TclObj, len(i.cmds))
+	ind := 0
+	for n, _ := range i.cmds {
+		cmds[ind] = FromStr(n)
+		ind++
+	}
+	return fromList(cmds)
+}
+
+var stringEn = Ensemble{
+	"length":     to_cmd(utf8.RuneCountInString),
+	"bytelength": to_cmd(func(s string) int { return len(s) }),
+	"trim":       to_cmd(strings.TrimSpace),
+	"match":      to_cmd(GlobMatch),
+	"index":      strIndex,
+}
+
+func strIndex(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 2 {
+		return i.FailStr("wrong # args")
+	}
+	str := args[0].AsString()
+	ind, e := args[1].AsInt()
+	if e != nil {
+		return i.Fail(e)
+	}
+	if ind >= len(str) {
+		return i.Return(kNil)
+	}
+	return i.Return(FromStr(str[ind : ind+1]))
 }
 
 func tclSource(i *Interp, args []*TclObj) TclStatus {
@@ -777,7 +800,7 @@ func init() {
 		"gets":     tclGets,
 		"if":       tclIf,
 		"incr":     tclIncr,
-		"info":     tclInfo,
+		"info":     infoEn.MakeCmd(),
 		"lappend":  tclLappend,
 		"lindex":   tclLindex,
 		"list":     tclList,
@@ -790,7 +813,7 @@ func init() {
 		"set":      tclSet,
 		"source":   tclSource,
 		"split":    tclSplit,
-		"string":   tclString,
+		"string":   stringEn.MakeCmd(),
 		"time":     tclTime,
 		"unset":    tclUnset,
 		"uplevel":  tclUplevel,
