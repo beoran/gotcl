@@ -323,8 +323,8 @@ func (p *parser) parseExprTerm() eterm {
 		return p.parseVariable()
 	case '!', '~':
 		return p.parseUnOpNode()
-    case '{':
-        return p.parseBlock()
+	case '{':
+		return p.parseBlock()
 	case '"':
 		return p.parseStringLit()
 	case '[':

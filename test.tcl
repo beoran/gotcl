@@ -197,7 +197,7 @@ test {bad proc} {
     proc fizzle {x} { " }
     set ec [catch { fizzle 4 } msg]
     assert $ec == 1
-    assert $msg == {Unexpected EOF, wanted "}
+    assert [string index $msg end] == {"}
 }
 
 test unset_test {
@@ -345,7 +345,7 @@ test {split} {
 }
 
 test {split with chars} {
-    assert [split "axxbyc" "xy"] == "a b c"
+    assert [split "axxbyc" "xy"] == [list a {} b c]
 }
 
 test {split empty} {

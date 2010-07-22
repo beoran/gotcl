@@ -3,11 +3,13 @@ package gotcl
 import (
 	"bufio"
 	"bytes"
+	"container/vector"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
+	"unicode"
 	"utf8"
 )
 
@@ -674,7 +676,11 @@ func strIndex(i *Interp, args []*TclObj) TclStatus {
 	str := args[0].AsString()
 	ind, e := args[1].AsInt()
 	if e != nil {
-		return i.Fail(e)
+		if args[1].AsString() == "end" {
+			ind = len(str) - 1
+		} else {
+			return i.Fail(e)
+		}
 	}
 	if ind >= len(str) {
 		return i.Return(kNil)
@@ -699,13 +705,18 @@ func tclSource(i *Interp, args []*TclObj) TclStatus {
 	return i.eval(cmds)
 }
 
-func oneof(s string, c int) bool {
-	for _, ch := range s {
-		if ch == c {
-			return true
+func splitWith(s string, fn func(int) bool) []string {
+	var res vector.StringVector
+	for {
+		i := strings.IndexFunc(s, fn)
+		if i == -1 {
+			res.Push(s)
+			break
 		}
+		res.Push(s[0:i])
+		s = s[i+1:]
 	}
-	return false
+	return []string(res)
 }
 
 func tclSplit(i *Interp, args []*TclObj) TclStatus {
@@ -715,14 +726,14 @@ func tclSplit(i *Interp, args []*TclObj) TclStatus {
 	sin := args[0].AsString()
 	var strs []string
 	if len(args) == 1 {
-		strs = strings.Fields(sin)
+		strs = splitWith(sin, unicode.IsSpace)
 	} else if len(args) == 2 {
 		chars := args[1].AsString()
 		if len(chars) == 0 {
 			strs = strings.Split(sin, "", -1)
 		} else {
-			strs = strings.FieldsFunc(sin,
-				func(c int) bool { return oneof(chars, c) })
+			strs = splitWith(sin,
+				func(c int) bool { return strings.IndexRune(chars, c) != -1 })
 		}
 	}
 	return i.Return(FromList(strs))

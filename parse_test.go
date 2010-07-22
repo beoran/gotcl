@@ -119,7 +119,7 @@ func TestExprParse(t *testing.T) {
 		exprtest{"max(100, 44)", "100"},
 		exprtest{"max( min(4, 4), (2 + 2))", "4"},
 		exprtest{"max(2, 100, 44, 11)", "100"},
-        exprtest{"{yay} == {yay}", "1"},
+		exprtest{"{yay} == {yay}", "1"},
 	}
 	varvals := map[string]string{"foo": "42"}
 	for _, c := range cases {
