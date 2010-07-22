@@ -1,9 +1,8 @@
 set ::passcount 0
 set ::current_test ""
 
-
 proc assert { a op b args } {
-    if [$op $a $b] {
+    if "{$a} $op {$b}" {
         incr ::passcount
         puts -nonewline "."
     } else {

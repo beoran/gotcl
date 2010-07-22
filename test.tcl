@@ -1,8 +1,19 @@
 source testlib.tcl
 
+if {![info exists +]} {
+    proc + {a b} {
+        return [expr {$a + $b}]
+    }
+}
+if {![info exists -]} {
+    proc - {a b} {
+        return [expr {$a - $b}]
+    }
+}
+
 set x 12
 proc foo {x} {
-    return [+ 1 [+ 1 [+ 1 $x]]]
+    return [expr {1 + 1 + 1 + $x}]
 }
 
 assert [foo 3] == 6 "globals unused"
@@ -330,11 +341,11 @@ test {string match} {
 }
 
 test {split} {
-    assert [split "a   b   c"] == "a b c"
+    assert [split "a  b  c"] == [list a {} b {} c]
 }
 
 test {split with chars} {
-    assert [split "axbyc" "xy"] == "a b c"
+    assert [split "axxbyc" "xy"] == "a b c"
 }
 
 test {split empty} {
@@ -419,6 +430,12 @@ test {foreach trick} {
     foreach { a b } { 1 2 } break
     assert $a == 1
     assert $b == 2
+}
+
+test {array syntax} {
+    set x(14) yes
+    assert $x(14) == yes
+    assert [info exists x] == 1
 }
 
 proc fib {n} {

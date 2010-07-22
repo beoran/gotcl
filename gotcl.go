@@ -79,6 +79,12 @@ func (p *parser) consumeRune(rune int) {
 	p.advance()
 }
 
+func (p *parser) eatSpace() {
+	for p.ch != -1 && unicode.IsSpace(p.ch) {
+		p.advance()
+	}
+}
+
 func (p *parser) eatWhile(fn func(int) bool) {
 	for p.ch != -1 && fn(p.ch) {
 		p.advance()
@@ -230,9 +236,12 @@ func (t strlit) Eval(i *Interp) TclStatus {
 	return i.Return(FromStr(res.String()))
 }
 
+func (p *parser) parseVariable() varRef {
+	p.consumeRune('$')
+	return p.parseVarRef()
+}
 
 func (p *parser) parseVarRef() varRef {
-	p.consumeRune('$')
 	if p.ch == '{' {
 		return toVarRef(p.parseBlockData())
 	}
@@ -279,6 +288,14 @@ func toVarRef(s string) varRef {
 	if strings.HasPrefix(s, "::") {
 		s = s[2:]
 		global = true
+	}
+	if s[len(s)-1] == ')' {
+		ri := strings.IndexRune(s, '(')
+		if ri > 0 {
+			ind := &tliteral{strval: s[ri : len(s)-1]}
+			s = s[0:ri]
+			return varRef{name: s, is_global: global, arrind: ind}
+		}
 	}
 	return varRef{name: s, is_global: global}
 }
@@ -373,7 +390,7 @@ func (p *parser) parseStringLit() strlit {
 			return strlit{toks}
 		case '$':
 			record_accum()
-			vref := p.parseVarRef()
+			vref := p.parseVariable()
 			appendtok(&toks, littok{kind: kVar, varref: &vref})
 		case '[':
 			record_accum()
@@ -400,10 +417,10 @@ func isEol(ch int) bool {
 }
 
 func (p *parser) eatExtra() {
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	for p.ch == ';' {
 		p.advance()
-		p.eatWhile(unicode.IsSpace)
+		p.eatSpace()
 	}
 }
 
@@ -426,7 +443,7 @@ func appendcmd(tx *[]Command, t Command) {
 
 func (p *parser) parseCommands() []Command {
 	res := make([]Command, 0, 128)
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	for p.ch != -1 {
 		if p.ch == '#' {
 			p.parseComment()
@@ -452,7 +469,7 @@ func appendttok(tx *[]TclTok, t TclTok) {
 func (p *parser) parseList() []TclTok {
 	res := make([]TclTok, 0, 32)
 	for p.ch != -1 {
-		p.eatWhile(unicode.IsSpace)
+		p.eatSpace()
 		if p.ch == -1 {
 			break
 		}
@@ -464,7 +481,7 @@ func (p *parser) parseList() []TclTok {
 func notspace(c int) bool { return !unicode.IsSpace(c) }
 
 func (p *parser) parseListToken() TclTok {
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	switch p.ch {
 	case '{':
 		return &tliteral{strval: p.parseBlockData()}
@@ -498,7 +515,7 @@ func (p *parser) parseTokenTil(til int) TclTok {
 	case '"':
 		return p.parseStringLit()
 	case '$':
-		return p.parseVarRef()
+		return p.parseVariable()
 	}
 	return p.parseSimpleWordTil(til)
 }

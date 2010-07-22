@@ -264,7 +264,7 @@ func ParseExpr(in RuneSource) (item eterm, err os.Error) {
 
 func (p *parser) parseExpr() eterm {
 	res := p.parseExprTerm()
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	switch p.ch {
 	case '?':
 		return p.parseTernaryIf(res)
@@ -298,11 +298,11 @@ func (ti *ternaryIfNode) String() string {
 
 func (p *parser) parseTernaryIf(cond eterm) *ternaryIfNode {
 	p.consumeRune('?')
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	yes := p.parseExpr()
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	p.consumeRune(':')
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	no := p.parseExpr()
 	return &ternaryIfNode{cond, yes, no}
 }
@@ -312,7 +312,7 @@ func istermchar(c int) bool {
 }
 
 func (p *parser) parseExprTerm() eterm {
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	switch p.ch {
 	case '(':
 		p.advance()
@@ -320,9 +320,11 @@ func (p *parser) parseExprTerm() eterm {
 		p.consumeRune(')')
 		return &parenNode{e}
 	case '$':
-		return p.parseVarRef()
+		return p.parseVariable()
 	case '!', '~':
 		return p.parseUnOpNode()
+    case '{':
+        return p.parseBlock()
 	case '"':
 		return p.parseStringLit()
 	case '[':
@@ -337,14 +339,14 @@ func (p *parser) parseExprTerm() eterm {
 
 func (p *parser) parseFunc(name string) *funcNode {
 	p.consumeRune('(')
-	p.eatWhile(unicode.IsSpace)
+	p.eatSpace()
 	var argsvec vector.Vector
 	for p.ch != ')' {
 		argsvec.Push(p.parseExpr())
-		p.eatWhile(unicode.IsSpace)
+		p.eatSpace()
 		if p.ch == ',' {
 			p.advance()
-			p.eatWhile(unicode.IsSpace)
+			p.eatSpace()
 		}
 	}
 	fargs := make([]eterm, argsvec.Len())
