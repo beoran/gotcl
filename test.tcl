@@ -421,9 +421,14 @@ test {expr} {
     assert [expr { ~0 }] == -1
 }
 
+test {expr /} {
+    assert [expr { 10 / 2 }] == 5
+}
+
 test {expr ternary if} {
     assert [expr { false ? 11 : 44 }] == 44
     assert [expr { (99 == 99) ? "yay" : "boo" }] == "yay"
+    assert [ expr { 1 < 2 ? 11 : 44 }] == 11
 }
 
 test {foreach trick} {

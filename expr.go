@@ -180,15 +180,15 @@ var timesOp = &binaryOp{"*", 3,
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 * i2), e
 	}}
+var divideOp = &binaryOp{"/", 3,
+	func(a, b *TclObj) (*TclObj, os.Error) {
+		i1, i2, e := asInts(a, b)
+		return FromInt(i1 / i2), e
+	}}
 var xorOp = &binaryOp{"^", 3,
 	func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 ^ i2), e
-	}}
-var divideOp = &binaryOp{"*", 3,
-	func(a, b *TclObj) (*TclObj, os.Error) {
-		i1, i2, e := asInts(a, b)
-		return FromInt(i1 / i2), e
 	}}
 var lshiftOp = &binaryOp{"<<", 4,
 	func(a, b *TclObj) (*TclObj, os.Error) {
@@ -362,6 +362,8 @@ func (p *parser) parseBinOp() *binaryOp {
 	switch c {
 	case '*':
 		return timesOp
+	case '/':
+		return divideOp
 	case '+':
 		return plusOp
 	case '-':

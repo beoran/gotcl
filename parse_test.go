@@ -103,6 +103,7 @@ func TestExprParse(t *testing.T) {
 		exprtest{"1 == 1 && 0 == 0", "1"},
 		exprtest{"1 || 1 && 0 || 0", "1"},
 		exprtest{"1 <= 2", "1"},
+		exprtest{"20 / 2", "10"},
 		exprtest{"$foo >= 109", "0"},
 		exprtest{"$foo != 42", "0"},
 		exprtest{"-3 * -3", "9"},
