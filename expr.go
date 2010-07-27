@@ -33,15 +33,15 @@ type exprFunc struct {
 }
 
 
-func binOpPick(op *binaryOp) TclCmd {
+func binOpFold(op *binaryOp) TclCmd {
 	return func(i *Interp, args []*TclObj) TclStatus {
 		mval := args[0]
 		for _, v := range args[1:] {
-			is_lt, e := op.action(v, mval)
+			res, e := op.action(v, mval)
 			if e != nil {
 				return i.Fail(e)
 			}
-			if is_lt.AsBool() {
+			if res.AsBool() {
 				mval = v
 			}
 		}
@@ -68,8 +68,8 @@ func powFn(i *Interp, args []*TclObj) TclStatus {
 }
 
 var mathFuncs = map[string]*exprFunc{
-	"min":  &exprFunc{1, 100, binOpPick(ltOp)},
-	"max":  &exprFunc{1, 100, binOpPick(gtOp)},
+	"min":  &exprFunc{1, 100, binOpFold(ltOp)},
+	"max":  &exprFunc{1, 100, binOpFold(gtOp)},
 	"rand": &exprFunc{0, 0, randFn},
 	"pow":  &exprFunc{2, 2, powFn},
 }
@@ -245,12 +245,17 @@ func gbalance(b eterm) eterm {
 	return b
 }
 
-func balance(b *binOpNode) *binOpNode {
-	bb, ok := b.b.(*binOpNode)
-	if ok && b.op.precedence >= bb.op.precedence {
-		return &binOpNode{bb.op,
-			&binOpNode{b.op, gbalance(b.a), gbalance(bb.a)},
-			gbalance(bb.b)}
+func balance(b *binOpNode) eterm {
+	switch bb := b.b.(type) {
+	case *binOpNode:
+		if b.op.precedence >= bb.op.precedence {
+			return &binOpNode{bb.op,
+				&binOpNode{b.op, gbalance(b.a), gbalance(bb.a)},
+				gbalance(bb.b)}
+		}
+	case *ternaryIfNode:
+		return &ternaryIfNode{&binOpNode{b.op, gbalance(b.a), bb.cond},
+			gbalance(bb.yes), gbalance(bb.no)}
 	}
 	return b
 }
@@ -293,7 +298,7 @@ func (ti *ternaryIfNode) Eval(i *Interp) TclStatus {
 }
 
 func (ti *ternaryIfNode) String() string {
-	return ti.cond.String() + " ? " + ti.yes.String() + " : " + ti.no.String()
+	return "(?: " + ti.cond.String() + " " + ti.yes.String() + " " + ti.no.String()
 }
 
 func (p *parser) parseTernaryIf(cond eterm) *ternaryIfNode {
@@ -420,7 +425,7 @@ func (p *parser) parseUnOpNode() *unOpNode {
 	return &unOpNode{p.advance(), p.parseExprTerm()}
 }
 
-func (p *parser) parseBinOpNode(a eterm) *binOpNode {
+func (p *parser) parseBinOpNode(a eterm) eterm {
 	return balance(&binOpNode{p.parseBinOp(), a, p.parseExpr()})
 }
 

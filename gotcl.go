@@ -211,6 +211,7 @@ type strlit struct {
 
 func (t strlit) String() string {
 	var res bytes.Buffer
+	res.WriteString(`"`)
 	for _, tok := range t.toks {
 		if tok.kind == kRaw {
 			res.WriteString(tok.value)

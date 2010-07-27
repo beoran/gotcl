@@ -110,6 +110,7 @@ func TestExprParse(t *testing.T) {
 		exprtest{"1 == 2 && 1", "0"},
 		exprtest{`true ? "yay" : "boo"`, "yay"},
 		exprtest{`false ? "boo" : "yay"`, "yay"},
+		exprtest{`3 < 2 ? "yes" : "no"`, "no"},
 		exprtest{"true ? false ? 0 : 1 : 0", "1"},
 		exprtest{"false ? 0 ? true : 1 : 0", "0"},
 		exprtest{"false ? 0 : true ? 99 : 0", "99"},
