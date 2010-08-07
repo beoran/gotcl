@@ -443,6 +443,22 @@ test {array syntax} {
     assert [info exists x] == 1
 }
 
+test { expand syntax } {
+    set ll {x yes}
+    set x no
+    set {*}$ll
+    assert $x == yes
+    assert [list 0 {*}{1 2} 3 {*}{ 4 5 } 6] == {0 1 2 3 4 5 6}
+}
+
+test {expand with bad list} {
+    assert_err {
+    list {*}{ " }
+    # "
+    }
+}
+
+
 proc fib {n} {
     if { $n < 2 } {
         return 1

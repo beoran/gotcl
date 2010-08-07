@@ -19,6 +19,11 @@ proc assert_noerr code {
     assert $ev == 0
 }
 
+proc assert_err code {
+    set ev [catch [list uplevel $code] msg]
+    assert $ev == 1 "expected error"
+}
+
 proc test {name body} {
     set ::current_test $name
     if [catch $body msg] {

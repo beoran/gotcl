@@ -197,11 +197,40 @@ func (p *parser) parseBlockData() string {
 	return "" // never happens.
 }
 
-func (p *parser) parseBlock() *block {
-	bd := p.parseBlockData()
-	if p.ch != -1 && !unicode.IsSpace(p.ch) && p.ch != '}' && p.ch != ']' {
+func (p *parser) hasExtraChars() bool {
+	return p.ch != -1 && !unicode.IsSpace(p.ch) && p.ch != '}' && p.ch != ']'
+}
+
+func (p *parser) checkForExtraChars() {
+	if p.hasExtraChars() {
 		p.fail("extra characters after close-brace")
 	}
+}
+
+func (p *parser) parseBlock() *block {
+	bd := p.parseBlockData()
+	p.checkForExtraChars()
+	return &block{strval: bd}
+}
+
+type expandTok struct {
+	subject TclTok
+}
+
+func (e *expandTok) Eval(i *Interp) TclStatus {
+	return e.subject.Eval(i)
+}
+
+func (e *expandTok) String() string {
+	return "{*}" + e.subject.String()
+}
+
+func (p *parser) parseBlockOrExpand() TclTok {
+	bd := p.parseBlockData()
+	if bd == "*" && p.hasExtraChars() {
+		return &expandTok{p.parseToken()}
+	}
+	p.checkForExtraChars()
 	return &block{strval: bd}
 }
 
@@ -512,7 +541,7 @@ func (p *parser) parseTokenTil(til int) TclTok {
 	case '[':
 		return p.parseSubcommand()
 	case '{':
-		return p.parseBlock()
+		return p.parseBlockOrExpand()
 	case '"':
 		return p.parseStringLit()
 	case '$':
@@ -630,7 +659,7 @@ func (t *TclObj) AsString() string {
 			ss := str.String()
 			t.value = &ss
 		} else {
-			panic("unspecified string")
+			panic("unable to stringify TclObj")
 		}
 	}
 	return *t.value
@@ -922,14 +951,30 @@ func (i *Interp) GetVar(vr varRef) (*TclObj, os.Error) {
 func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
 	res := make([]*TclObj, len(toks))
 	rc := kTclOK
-	for ind, t := range toks {
+	oind := 0
+	for _, t := range toks {
 		rc = t.Eval(i)
-		res[ind] = i.retval
+		if _, ok := t.(*expandTok); ok {
+			rlist, e := i.retval.AsList()
+			if e != nil {
+				i.err = e
+				return nil, kTclErr
+			}
+			if len(rlist) > 1 {
+				nres := make([]*TclObj, len(res)+len(rlist))
+				copy(nres, res)
+				res = nres
+			}
+			oind += copy(res[oind:], rlist)
+		} else {
+			res[oind] = i.retval
+			oind++
+		}
 		if rc != kTclOK {
 			break
 		}
 	}
-	return res, rc
+	return res[0:oind], rc
 }
 
 func (i *Interp) ClearError() { i.err = nil }

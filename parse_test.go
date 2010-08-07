@@ -39,6 +39,7 @@ func TestCommandParsing(t *testing.T) {
 	verifyParse(t, `set x  [  ]`)
 	verifyParse(t, `set x "foo[]bar"`)
 	verifyParse(t, `set x{}x foo`)
+	verifyParse(t, `{*}{set x} 2`)
 }
 
 func TestCloseBraceExtra(t *testing.T) {
