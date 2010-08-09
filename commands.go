@@ -262,8 +262,13 @@ func tclFor(i *Interp, args []*TclObj) TclStatus {
 		} else if rc != kTclOK && rc != kTclContinue {
 			return rc
 		}
-		i.EvalObj(next)
-		testexpr.Eval(i)
+		rc = i.EvalObj(next)
+		if rc != kTclOK {
+			return rc
+		}
+		if rc = testexpr.Eval(i); rc != kTclOK {
+			return rc
+		}
 		cond = i.retval.AsBool()
 	}
 	return i.Return(kNil)

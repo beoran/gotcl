@@ -458,6 +458,14 @@ test {expand with bad list} {
     }
 }
 
+test {for with bad stuff} {
+    assert_err {
+        for {set i 0} { $i < 10 } { error "boo" } {
+            incr i
+        }
+    }
+}
+
 
 proc fib {n} {
     if { $n < 2 } {
