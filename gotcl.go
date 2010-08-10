@@ -91,7 +91,14 @@ func (p *parser) eatWhile(fn func(int) bool) {
 	}
 }
 
+type notExpand struct{}
+
+func (ne notExpand) IsExpand() bool {
+	return false
+}
+
 type tliteral struct {
+	notExpand
 	strval string
 	tval   *TclObj
 }
@@ -139,6 +146,7 @@ func (p *parser) parseSimpleWordTil(til int) *tliteral {
 }
 
 type subcommand struct {
+	notExpand
 	cmd Command
 }
 
@@ -148,6 +156,7 @@ func (s *subcommand) Eval(i *Interp) TclStatus {
 }
 
 type block struct {
+	notExpand
 	strval string
 	tval   *TclObj
 }
@@ -170,7 +179,7 @@ func (p *parser) parseSubcommand() *subcommand {
 		p.eatWhile(issepspace)
 	}
 	p.consumeRune(']')
-	return &subcommand{Command{res}}
+	return &subcommand{cmd: Command{res}}
 }
 
 func (p *parser) parseBlockData() string {
@@ -217,6 +226,10 @@ type expandTok struct {
 	subject TclTok
 }
 
+func (e *expandTok) IsExpand() bool {
+	return true
+}
+
 func (e *expandTok) Eval(i *Interp) TclStatus {
 	return e.subject.Eval(i)
 }
@@ -235,6 +248,7 @@ func (p *parser) parseBlockOrExpand() TclTok {
 }
 
 type strlit struct {
+	notExpand
 	toks []littok
 }
 
@@ -292,6 +306,7 @@ func (p *parser) parseVarRef() varRef {
 }
 
 type varRef struct {
+	notExpand
 	is_global bool
 	name      string
 	arrind    TclTok
@@ -351,6 +366,7 @@ func (c *Command) String() string {
 type TclTok interface {
 	String() string
 	Eval(i *Interp) TclStatus
+	IsExpand() bool
 }
 
 const (
@@ -417,7 +433,7 @@ func (p *parser) parseStringLit() strlit {
 		case '"':
 			record_accum()
 			p.advance()
-			return strlit{toks}
+			return strlit{toks: toks}
 		case '$':
 			record_accum()
 			vref := p.parseVariable()
@@ -937,10 +953,10 @@ func (i *Interp) SetVar(vr varRef, val *TclObj) {
 			old, ok = m[n]
 		}
 		if old == nil {
-			m[n] = &varEntry{obj: val}
-		} else {
-			old.obj = val
+			old = &varEntry{obj: val}
+			m[n] = old
 		}
+		old.obj = val
 	}
 }
 
@@ -968,7 +984,7 @@ func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
 	oind := 0
 	for _, t := range toks {
 		rc = t.Eval(i)
-		if _, ok := t.(*expandTok); ok {
+		if t.IsExpand() {
 			rlist, e := i.retval.AsList()
 			if e != nil {
 				i.err = e
