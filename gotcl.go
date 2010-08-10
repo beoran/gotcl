@@ -708,7 +708,24 @@ func (t *TclObj) asVarRef() varRef {
 func FromStr(s string) *TclObj {
 	return &TclObj{value: &s}
 }
-func FromInt(i int) *TclObj { return &TclObj{intval: i, has_intval: true} }
+
+var kTrue, kFalse *TclObj
+var smallInts [256]*TclObj
+
+func init() {
+	for i := range smallInts {
+		smallInts[i] = &TclObj{intval: i, has_intval: true}
+	}
+	kTrue = FromInt(1)
+	kFalse = FromInt(0)
+}
+
+func FromInt(i int) *TclObj {
+	if i >= 0 && i < len(smallInts) {
+		return smallInts[i]
+	}
+	return &TclObj{intval: i, has_intval: true}
+}
 
 func FromList(l []string) *TclObj {
 	vl := make([]*TclObj, len(l))
@@ -718,8 +735,6 @@ func FromList(l []string) *TclObj {
 	return fromList(vl)
 }
 
-var kTrue = FromInt(1)
-var kFalse = FromInt(0)
 var kNil = FromStr("")
 
 func FromBool(b bool) *TclObj {
@@ -728,7 +743,6 @@ func FromBool(b bool) *TclObj {
 	}
 	return kFalse
 }
-
 
 func fromList(items []*TclObj) *TclObj { return &TclObj{listval: items} }
 
