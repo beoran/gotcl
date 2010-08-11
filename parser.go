@@ -207,18 +207,6 @@ func (p *parser) parseVarRef() varRef {
 	return varRef{is_global: global, name: name, arrind: ind}
 }
 
-func appendtok(tx *[]littok, t littok) {
-	oldlen := len(*tx)
-	if oldlen == cap(*tx) {
-		newcap := 1 + (cap(*tx)+1)*2
-		newsl := make([]littok, oldlen, newcap)
-		copy(newsl, *tx)
-		*tx = newsl
-	}
-	*tx = (*tx)[0 : oldlen+1]
-	(*tx)[oldlen] = t
-}
-
 var escMap = map[int]string{
 	'n': "\n", 't': "\t", 'a': "\a", 'v': "\v", 'r': "\r"}
 
@@ -250,6 +238,18 @@ func (p *parser) parseListStringLit() string {
 		}
 	}
 	panic("unreachable")
+}
+
+func appendtok(tx *[]littok, t littok) {
+	oldlen := len(*tx)
+	if oldlen == cap(*tx) {
+		newcap := 1 + (cap(*tx)+1)*2
+		newsl := make([]littok, oldlen, newcap)
+		copy(newsl, *tx)
+		*tx = newsl
+	}
+	*tx = (*tx)[0 : oldlen+1]
+	(*tx)[oldlen] = t
 }
 
 func (p *parser) parseStringLit() strlit {
