@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-
 type notExpand struct{}
 
 func (ne notExpand) IsExpand() bool {
@@ -400,8 +399,8 @@ func parseList(txt string) ([]*TclObj, os.Error) {
 		return nil, err
 	}
 	result := make([]*TclObj, len(lst))
-	for i, li := range lst {
-		result[i] = FromStr(li.String())
+	for i, s := range lst {
+		result[i] = FromStr(s)
 	}
 	return result, nil
 }

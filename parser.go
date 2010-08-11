@@ -4,6 +4,7 @@ import (
 	"os"
 	"bytes"
 	"unicode"
+	"container/vector"
 )
 
 type RuneSource interface {
@@ -228,6 +229,29 @@ func escaped(r int) string {
 	return string(r)
 }
 
+func (p *parser) parseListStringLit() string {
+	p.consumeRune('"')
+	var buf bytes.Buffer
+	for {
+		switch p.ch {
+		case '"':
+			p.advance()
+			if p.ch != -1 && !unicode.IsSpace(p.ch) {
+				p.fail("list element in quotes not followed by space")
+			}
+			return buf.String()
+		case '\\':
+			p.advance()
+			buf.WriteString(escaped(p.advance()))
+		case -1:
+			p.fail("unmatched open quote in list")
+		default:
+			buf.WriteRune(p.advance())
+		}
+	}
+	panic("unreachable")
+}
+
 func (p *parser) parseStringLit() strlit {
 	p.consumeRune('"')
 	var accum bytes.Buffer
@@ -256,7 +280,7 @@ func (p *parser) parseStringLit() strlit {
 			p.advance()
 			accum.WriteString(escaped(p.advance()))
 		case -1:
-			p.fail("Unexpected EOF, wanted \"")
+			p.fail("missing \"")
 		default:
 			accum.WriteRune(p.advance())
 		}
@@ -322,29 +346,24 @@ func appendttok(tx *[]TclTok, t TclTok) {
 	(*tx)[oldlen] = t
 }
 
-func (p *parser) parseList() []TclTok {
-	res := make([]TclTok, 0, 32)
-	for p.ch != -1 {
-		p.eatSpace()
-		if p.ch == -1 {
-			break
-		}
-		appendttok(&res, p.parseListToken())
-	}
-	return res
-}
-
 func notspace(c int) bool { return !unicode.IsSpace(c) }
-
-func (p *parser) parseListToken() TclTok {
-	p.eatSpace()
-	switch p.ch {
-	case '{':
-		return &tliteral{strval: p.parseBlockData()}
-	case '"':
-		return p.parseStringLit()
+func (p *parser) parseList() []string {
+	var res vector.StringVector
+Loop:
+	for {
+		p.eatSpace()
+		switch p.ch {
+		case -1:
+			break Loop
+		case '{':
+			res.Push(p.parseBlockData())
+		case '"':
+			res.Push(p.parseListStringLit())
+		default:
+			res.Push(p.consumeWhile1(notspace, "word"))
+		}
 	}
-	return &tliteral{strval: p.consumeWhile1(notspace, "word")}
+	return []string(res)
 }
 
 func (p *parser) parseCommand() Command {
@@ -382,7 +401,7 @@ func setError(err *os.Error) {
 	}
 }
 
-func ParseList(in RuneSource) (items []TclTok, err os.Error) {
+func ParseList(in RuneSource) (items []string, err os.Error) {
 	p := newParser(in)
 	defer setError(&err)
 	items = p.parseList()
