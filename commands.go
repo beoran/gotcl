@@ -178,9 +178,9 @@ func tclIf(i *Interp, args []*TclObj) TclStatus {
 			elseblock = args[0]
 		}
 	}
-	rc1 := cond.Eval(i)
-	if rc1 != kTclOK {
-		return rc1
+	rc := cond.Eval(i)
+	if rc != kTclOK {
+		return rc
 	}
 
 	if i.retval.AsBool() {

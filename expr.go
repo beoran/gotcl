@@ -160,7 +160,7 @@ type binaryOp struct {
 	action     func(*TclObj, *TclObj) (*TclObj, os.Error)
 }
 
-var BinOps = []*binaryOp{
+var BinOps = [...]*binaryOp{
 	plusOp, minusOp, timesOp, xorOp, divideOp, lshiftOp, rshiftOp,
 	equalsOp, notEqualsOp, andOp, orOp, gtOp, gteOp, ltOp, lteOp,
 }

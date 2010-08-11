@@ -433,8 +433,8 @@ test {expr ternary if} {
 
 test {foreach trick} {
     foreach { a b } { 1 2 } break
-    assert $a == 1
-    assert $b == 2
+    expect $a == 1
+    expect $b == 2
 }
 
 test {array syntax} {
@@ -447,8 +447,8 @@ test { expand syntax } {
     set ll {x yes}
     set x no
     set {*}$ll
-    assert $x == yes
-    assert [list 0 {*}{1 2} 3 {*}{ 4 5 } 6] == {0 1 2 3 4 5 6}
+    expect $x == yes
+    expect [list 0 {*}{1 2} 3 {*}{ 4 5 } 6] == {0 1 2 3 4 5 6}
 }
 
 test {expand with bad list} {
@@ -463,6 +463,27 @@ test {for with bad stuff} {
         for {set i 0} { $i < 10 } { error "boo" } {
             incr i
         }
+    }
+}
+
+test {lazy || and && in expr} {
+    set x yay
+    expr { true || [set x boo] }
+    expect $x == yay
+    set y yay
+    expr { false && [set y boo] }
+    expect $y == yay
+}
+
+proc nothing args {}
+
+test { list parsing again } {
+    set x { nothing "["nothing"]" nothing }
+    assert_noerr {
+        eval $x
+    }
+    assert_err {
+        llength $x
     }
 }
 
@@ -516,7 +537,7 @@ proc sum_to {n} {
     }
 }
 
-puts "\nPassed $::passcount assertions."
+puts "\nPassed $::passcount/$::assertcount assertions."
 if false {
     puts "\n----Benchmarks----"
 
