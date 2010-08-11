@@ -2,6 +2,7 @@ include $(GOROOT)/src/Make.$(GOARCH)
 TARG=gotcl
 GOFILES=\
         gotcl.go\
+        parser.go\
         commands.go\
         expr.go\
         chans.go\
