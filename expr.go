@@ -136,6 +136,9 @@ func (p *parenNode) String() string {
 }
 
 func (bb *binOpNode) Eval(i *Interp) TclStatus {
+	if bb.op.special != nil {
+		return bb.op.special(i, bb.a, bb.b)
+	}
 	bb.a.Eval(i)
 	a := i.retval
 	bb.b.Eval(i)
@@ -154,10 +157,13 @@ func (bb *binOpNode) String() string {
 	return "(" + bb.op.name + " " + bb.a.String() + " " + bb.b.String() + ")"
 }
 
+
+type binOpAct func(*TclObj, *TclObj) (*TclObj, os.Error)
 type binaryOp struct {
 	name       string
 	precedence int
 	action     func(*TclObj, *TclObj) (*TclObj, os.Error)
+	special    func(*Interp, eterm, eterm) TclStatus
 }
 
 var BinOps = [...]*binaryOp{
@@ -165,74 +171,104 @@ var BinOps = [...]*binaryOp{
 	equalsOp, notEqualsOp, andOp, orOp, gtOp, gteOp, ltOp, lteOp,
 }
 
-var plusOp = &binaryOp{"+", 2,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+var plusOp = &binaryOp{name: "+", precedence: 2,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 + i2), e
-	}}
-var minusOp = &binaryOp{"-", 2,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+	},
+}
+var minusOp = &binaryOp{name: "-", precedence: 2,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 - i2), e
-	}}
-var timesOp = &binaryOp{"*", 3,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+	},
+}
+var timesOp = &binaryOp{name: "*", precedence: 3,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 * i2), e
-	}}
-var divideOp = &binaryOp{"/", 3,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+				}}
+var divideOp = &binaryOp{name: "/", precedence: 3,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 / i2), e
-	}}
-var xorOp = &binaryOp{"^", 3,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+				}}
+var xorOp = &binaryOp{name: "^", precedence: 3,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 ^ i2), e
-	}}
-var lshiftOp = &binaryOp{"<<", 4,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+				}}
+var lshiftOp = &binaryOp{name: "<<", precedence: 4,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 << uint(i2)), e
-	}}
-var rshiftOp = &binaryOp{">>", 4,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+				}}
+var rshiftOp = &binaryOp{name: ">>", precedence: 4,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromInt(i1 >> uint(i2)), e
-	}}
-var equalsOp = &binaryOp{"==", 1,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+				}}
+var equalsOp = &binaryOp{name: "==", precedence: 1,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		return FromBool(a.AsString() == b.AsString()), nil
-	}}
-var notEqualsOp = &binaryOp{"!=", 1,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+					}}
+var notEqualsOp = &binaryOp{name: "!=", precedence: 1,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		return FromBool(a.AsString() != b.AsString()), nil
-	}}
-var andOp = &binaryOp{"&&", 0,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+				}}
+var andOp = &binaryOp{name: "&&", precedence: 0,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		return FromBool(a.AsBool() && b.AsBool()), nil
+	},
+	special: func(i *Interp, a, b eterm) TclStatus {
+		if rc := a.Eval(i); rc != kTclOK {
+			return rc
+		}
+		if !i.retval.AsBool() {
+			return i.Return(kFalse)
+		}
+		if rc := b.Eval(i); rc != kTclOK {
+			return rc
+		}
+		return i.Return(FromBool(i.retval.AsBool()))
 	}}
-var orOp = &binaryOp{"||", 0,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+var orOp = &binaryOp{
+	name: "||", precedence: 0,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		return FromBool(a.AsBool() || b.AsBool()), nil
+	},
+	special: func(i *Interp, a, b eterm) TclStatus {
+		if rc := a.Eval(i); rc != kTclOK {
+			return rc
+		}
+		if i.retval.AsBool() {
+			return i.Return(kTrue)
+		}
+		if rc := b.Eval(i); rc != kTclOK {
+			return rc
+		}
+		return i.Return(FromBool(i.retval.AsBool()))
 	}}
-var gtOp = &binaryOp{">", -1,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+var gtOp = &binaryOp{
+	name: ">", precedence: -1,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromBool(i1 > i2), e
 	}}
-var gteOp = &binaryOp{">=", -1,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+var gteOp = &binaryOp{
+	name: ">=", precedence: -1,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromBool(i1 >= i2), e
 	}}
-var ltOp = &binaryOp{"<", -1,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+
+var ltOp = &binaryOp{name: "<", precedence: -1,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromBool(i1 < i2), e
-	}}
-var lteOp = &binaryOp{"<=", -1,
-	func(a, b *TclObj) (*TclObj, os.Error) {
+				}}
+var lteOp = &binaryOp{name: "<=", precedence: -1,
+	action: func(a, b *TclObj) (*TclObj, os.Error) {
 		i1, i2, e := asInts(a, b)
 		return FromBool(i1 <= i2), e
 	}}
