@@ -30,6 +30,9 @@ func tclSet(i *Interp, args []*TclObj) TclStatus {
 }
 
 func tclUnset(i *Interp, args []*TclObj) TclStatus {
+	if len(args) == 0 {
+		return i.FailStr("wrong # args")
+	}
 	i.SetVarRaw(args[0].AsString(), nil)
 	return kTclOK
 }
