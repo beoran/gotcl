@@ -1,13 +1,28 @@
 source testlib.tcl
 
-if {![info exists +]} {
+proc has_command cmd_name {
+    set matching [llength [info commands $cmd_name]]
+    return [expr "$matching > 0"]
+}
+
+if {![has_command +]} {
     proc + {a b} {
         return [expr {$a + $b}]
     }
 }
-if {![info exists -]} {
+if {![has_command -]} {
     proc - {a b} {
         return [expr {$a - $b}]
+    }
+}
+
+test {has_command} {
+    assert_noerr {
+        foreach x [info commands] {
+            if {![has_command $x]} {
+                error "mismatch"
+            }
+        }
     }
 }
 

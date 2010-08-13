@@ -656,14 +656,25 @@ func varExists(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(FromBool(err == nil))
 }
 
-func getCmdNames(i *Interp) *TclObj {
+func getCmdNames(i *Interp, args []*TclObj) TclStatus {
+	if len(args) > 1 {
+		return i.FailStr("wrong # args")
+	}
+	filtered := false
+	pattern := ""
+	if len(args) == 1 {
+		filtered = true
+		pattern = args[0].AsString()
+	}
 	cmds := make([]*TclObj, len(i.cmds))
 	ind := 0
 	for n, _ := range i.cmds {
-		cmds[ind] = FromStr(n)
-		ind++
+		if !filtered || GlobMatch(pattern, n) {
+			cmds[ind] = FromStr(n)
+			ind++
+		}
 	}
-	return fromList(cmds)
+	return i.Return(fromList(cmds[0:ind]))
 }
 
 var stringEn = EnsembleSpec{
