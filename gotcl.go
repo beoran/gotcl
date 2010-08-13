@@ -322,7 +322,7 @@ func (t *TclObj) AsBool() bool {
 	return iv != 0
 }
 
-func (t *TclObj) asVarRef() varRef {
+func (t *TclObj) AsVarRef() varRef {
 	if t.vrefval == nil {
 		vr := toVarRef(t.AsString())
 		t.vrefval = &vr

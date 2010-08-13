@@ -19,10 +19,10 @@ func tclSet(i *Interp, args []*TclObj) TclStatus {
 	}
 	if len(args) == 2 {
 		val := args[1]
-		i.SetVar(args[0].asVarRef(), val)
+		i.SetVar(args[0].AsVarRef(), val)
 		return i.Return(val)
 	}
-	v, e := i.GetVar(args[0].asVarRef())
+	v, e := i.GetVar(args[0].AsVarRef())
 	if e != nil {
 		return i.Fail(e)
 	}
@@ -33,7 +33,7 @@ func tclUnset(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
 		return i.FailStr("wrong # args")
 	}
-	i.SetVar(args[0].asVarRef(), nil)
+	i.SetVar(args[0].AsVarRef(), nil)
 	return kTclOK
 }
 
@@ -88,7 +88,7 @@ func tclIncr(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 && len(args) != 2 {
 		return i.FailStr("wrong # args")
 	}
-	vn := args[0].asVarRef()
+	vn := args[0].AsVarRef()
 	v, ve := i.GetVar(vn)
 	if ve != nil {
 		return i.Fail(ve)
@@ -148,7 +148,7 @@ func tclCatch(i *Interp, args []*TclObj) TclStatus {
 		} else if r == kTclOK {
 			val = i.retval
 		}
-		i.SetVar(args[1].asVarRef(), val)
+		i.SetVar(args[1].AsVarRef(), val)
 	}
 	i.ClearError()
 	return i.Return(FromInt(int(r)))
@@ -295,7 +295,7 @@ func tclForeach(i *Interp, args []*TclObj) TclStatus {
 	}
 	for len(list) > 0 {
 		for ind, vn := range vlist {
-			i.SetVar(vn.asVarRef(), list[ind])
+			i.SetVar(vn.AsVarRef(), list[ind])
 		}
 		list = list[chunksz:]
 		rc := i.EvalObj(body)
@@ -484,7 +484,7 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
 		return i.FailStr("wrong # args")
 	}
-	vname := args[0].asVarRef()
+	vname := args[0].AsVarRef()
 	v, ve := i.GetVar(vname)
 	if ve != nil {
 		v = fromList(make([]*TclObj, 0, 10))
@@ -617,7 +617,7 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 		str = str[0 : len(str)-1]
 	}
 	if len(args) == 2 {
-		i.SetVar(args[1].asVarRef(), FromStr(str))
+		i.SetVar(args[1].AsVarRef(), FromStr(str))
 		retval := len(str)
 		if eof {
 			retval = -1
@@ -652,7 +652,7 @@ func varExists(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
 		return i.FailStr("wrong # args")
 	}
-	_, err := i.GetVar(args[0].asVarRef())
+	_, err := i.GetVar(args[0].AsVarRef())
 	return i.Return(FromBool(err == nil))
 }
 
