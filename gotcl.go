@@ -420,17 +420,19 @@ type argsig struct {
 
 func (i *Interp) bindArgs(vnames []argsig, args []*TclObj) os.Error {
 	lastind := len(vnames) - 1
+	var vr varRef
 	for ix, vn := range vnames {
+		vr.name = vn.name
 		if ix == lastind && vn.name == "args" {
-			i.SetVarRaw(vn.name, fromList(args[ix:]))
+			i.SetVar(vr, fromList(args[ix:]))
 			return nil
 		} else if ix >= len(args) {
 			if vn.def == nil {
 				return os.NewError("arg count mismatch")
 			}
-			i.SetVarRaw(vn.name, vn.def)
+			i.SetVar(vr, vn.def)
 		} else {
-			i.SetVarRaw(vn.name, args[ix])
+			i.SetVar(vr, args[ix])
 		}
 	}
 	return nil

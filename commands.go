@@ -142,14 +142,13 @@ func tclCatch(i *Interp, args []*TclObj) TclStatus {
 	}
 	r := i.EvalObj(args[0])
 	if len(args) == 2 {
-		vname := args[1].AsString()
 		val := kNil
 		if r == kTclErr {
 			val = FromStr(i.err.String())
 		} else if r == kTclOK {
 			val = i.retval
 		}
-		i.SetVarRaw(vname, val)
+		i.SetVar(args[1].asVarRef(), val)
 	}
 	i.ClearError()
 	return i.Return(FromInt(int(r)))
@@ -653,8 +652,7 @@ func varExists(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
 		return i.FailStr("wrong # args")
 	}
-	vname := args[0].AsString()
-	_, err := i.GetVarRaw(vname)
+	_, err := i.GetVar(args[0].asVarRef())
 	return i.Return(FromBool(err == nil))
 }
 
