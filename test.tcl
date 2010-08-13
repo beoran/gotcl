@@ -16,15 +16,10 @@ if {![has_command -]} {
     }
 }
 
-test {has_command} {
-    assert_noerr {
-        foreach x [info commands] {
-            if {![has_command $x]} {
-                error "mismatch"
-            }
-        }
-    }
+if {[has_command go]} {
+    source chanstest.tcl
 }
+
 
 set x 12
 proc foo {x} {
@@ -38,6 +33,16 @@ test {same line} {
     set x 0
     incr x;incr x;  incr x   ; incr x
     assert $x == 4
+}
+
+test {has_command} {
+    assert_noerr {
+        foreach x [info commands] {
+            if {![has_command $x]} {
+                error "mismatch"
+            }
+        }
+    }
 }
 
 test {set test} {
