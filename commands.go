@@ -33,7 +33,7 @@ func tclUnset(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
 		return i.FailStr("wrong # args")
 	}
-	i.SetVarRaw(args[0].AsString(), nil)
+	i.SetVar(args[0].asVarRef(), nil)
 	return kTclOK
 }
 
@@ -296,7 +296,7 @@ func tclForeach(i *Interp, args []*TclObj) TclStatus {
 	}
 	for len(list) > 0 {
 		for ind, vn := range vlist {
-			i.SetVarRaw(vn.AsString(), list[ind])
+			i.SetVar(vn.asVarRef(), list[ind])
 		}
 		list = list[chunksz:]
 		rc := i.EvalObj(body)
@@ -485,8 +485,8 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
 		return i.FailStr("wrong # args")
 	}
-	vname := args[0].AsString()
-	v, ve := i.GetVarRaw(vname)
+	vname := args[0].asVarRef()
+	v, ve := i.GetVar(vname)
 	if ve != nil {
 		v = fromList(make([]*TclObj, 0, 10))
 	}
@@ -504,7 +504,7 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 	dest = dest[0:new_len]
 	copy(dest[len(items):], new_items)
 	newobj := fromList(dest)
-	i.SetVarRaw(vname, newobj)
+	i.SetVar(vname, newobj)
 	return i.Return(newobj)
 }
 
@@ -618,8 +618,7 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 		str = str[0 : len(str)-1]
 	}
 	if len(args) == 2 {
-		resname := args[1].AsString()
-		i.SetVarRaw(resname, FromStr(str))
+		i.SetVar(args[1].asVarRef(), FromStr(str))
 		retval := len(str)
 		if eof {
 			retval = -1
