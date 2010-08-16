@@ -459,8 +459,36 @@ test {foreach trick} {
 
 test {array syntax} {
     set x(14) yes
-    assert $x(14) == yes
-    assert [info exists x] == 1
+    set x(15) yes2
+    expect $x(14) == yes
+    expect $x(15) == yes2
+    expect [info exists x] == 1
+    expect [info exists x(14)] == 1 "x(14)"
+    expect [info exists x(15)] == 1 "x(15)"
+    expect [info exists x(16)] == 0 "x(16)"
+}
+
+test {array vars} {
+    set x(0) "foo"
+    assert_err {
+        puts $x
+    }
+    set y(14) 2
+    assert_err {
+        incr y
+    }
+}
+
+test {array size} {
+    set x(0) 1
+    set x(1) 1
+    set x(2) 1
+    expect [array size x] == 3
+}
+
+test {array get} {
+    set x(10) 20
+    expect [array get x] == {10 20}
 }
 
 test { expand syntax } {

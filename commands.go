@@ -652,8 +652,15 @@ func varExists(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
 		return i.FailStr("wrong # args")
 	}
-	_, err := i.GetVar(args[0].AsVarRef())
-	return i.Return(FromBool(err == nil))
+	vn := args[0].AsVarRef()
+	_, err := i.GetVar(vn)
+	if err != nil {
+		_, err = i.getArray(vn)
+		if err != nil || vn.arrind != nil {
+			return i.Return(kFalse)
+		}
+	}
+	return i.Return(kTrue)
 }
 
 func getCmdNames(i *Interp, args []*TclObj) TclStatus {
@@ -703,6 +710,41 @@ func strIndex(i *Interp, args []*TclObj) TclStatus {
 	}
 	return i.Return(FromStr(str[ind : ind+1]))
 }
+
+var arrayEn = EnsembleSpec{
+	"size": arraySize,
+	"get":  arrayGet,
+}
+
+func arraySize(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 1 {
+		return i.FailStr("wrong # args")
+	}
+	arr, e := i.getArray(args[0].AsVarRef())
+	if e != nil {
+		return i.Fail(e)
+	}
+	return i.Return(FromInt(len(arr.arrdata)))
+}
+
+func arrayGet(i *Interp, args []*TclObj) TclStatus {
+	if len(args) != 1 {
+		return i.FailStr("wrong # args")
+	}
+	arr, e := i.getArray(args[0].AsVarRef())
+	if e != nil {
+		return i.Fail(e)
+	}
+	res := make([]*TclObj, len(arr.arrdata)*2)
+	ind := 0
+	for k, v := range arr.arrdata {
+		res[ind] = FromStr(k)
+		res[ind+1] = v
+		ind += 2
+	}
+	return i.Return(fromList(res[0:ind]))
+}
+
 
 func tclSource(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
@@ -819,6 +861,7 @@ func init() {
 	}
 	initCmds := map[string]TclCmd{
 		"apply":    tclApply,
+		"array":    arrayEn.MakeCmd(),
 		"break":    tclBreak,
 		"catch":    tclCatch,
 		"concat":   tclConcat,

@@ -136,7 +136,7 @@ func toVarRef(s string) varRef {
 	if s[len(s)-1] == ')' {
 		ri := strings.IndexRune(s, '(')
 		if ri > 0 {
-			ind := &tliteral{strval: s[ri : len(s)-1]}
+			ind := &tliteral{strval: s[ri+1 : len(s)-1]}
 			s = s[0:ri]
 			return varRef{name: s, is_global: global, arrind: ind}
 		}
@@ -211,8 +211,9 @@ type framelink struct {
 }
 
 type varEntry struct {
-	obj  *TclObj
-	link *framelink
+	obj     *TclObj
+	link    *framelink
+	arrdata map[string]*TclObj
 }
 
 type VarMap map[string]*varEntry
@@ -551,28 +552,63 @@ func (i *Interp) SetVarRaw(name string, val *TclObj) {
 	i.SetVar(toVarRef(name), val)
 }
 
-func (i *Interp) SetVar(vr varRef, val *TclObj) {
+func (i *Interp) SetVar(vr varRef, val *TclObj) TclStatus {
 	m := i.GetVarMap(vr.is_global)
 	if val == nil {
 		m[vr.name] = nil, false
+		return kTclOK
+	}
+	n := vr.name
+	old, ok := m[n]
+	for ok && old != nil && old.link != nil {
+		m = old.link.frame.vars
+		n = old.link.name
+		old, ok = m[n]
+	}
+	if old == nil {
+		old = &varEntry{}
+		m[n] = old
+		if vr.arrind != nil {
+			old.arrdata = make(map[string]*TclObj)
+		}
 	} else {
-		n := vr.name
-		old, ok := m[n]
-		for ok && old != nil && old.link != nil {
-			m = old.link.frame.vars
-			n = old.link.name
-			old, ok = m[n]
+		if vr.arrind != nil && old.arrdata == nil {
+			return i.FailStr("can't set: variable is not an array")
 		}
-		if old == nil {
-			old = &varEntry{obj: val}
-			m[n] = old
+	}
+	if vr.arrind != nil {
+		rc := vr.arrind.Eval(i)
+		if rc != kTclOK {
+			return rc
 		}
+		sind := i.retval.AsString()
+		old.arrdata[sind] = val
+	} else {
 		old.obj = val
 	}
+	i.retval = val
+	return kTclOK
 }
 
 func (i *Interp) GetVarRaw(name string) (*TclObj, os.Error) {
 	return i.GetVar(toVarRef(name))
+}
+
+func (i *Interp) getArray(vr varRef) (*varEntry, os.Error) {
+	v, ok := i.GetVarMap(vr.is_global)[vr.name]
+	if !ok {
+		return nil, os.NewError("variable not found: " + vr.String())
+	}
+	for v.link != nil {
+		v, ok = v.link.frame.vars[v.link.name]
+		if !ok {
+			return nil, os.NewError("variable not found: " + vr.String())
+		}
+	}
+	if v.arrdata == nil {
+		return nil, os.NewError("not an array")
+	}
+	return v, nil
 }
 
 func (i *Interp) GetVar(vr varRef) (*TclObj, os.Error) {
@@ -586,6 +622,23 @@ func (i *Interp) GetVar(vr varRef) (*TclObj, os.Error) {
 			return nil, os.NewError("variable not found: " + vr.String())
 		}
 	}
+	if vr.arrind != nil {
+		if v.arrdata == nil {
+			return nil, os.NewError("can't get: variable isn't array")
+		}
+		if rc := vr.arrind.Eval(i); rc != kTclOK {
+			return nil, i.err
+		}
+		sind := i.retval.AsString()
+		elt, ok := v.arrdata[sind]
+		if !ok {
+			return nil, os.NewError("can't read " + sind + ": no such element in array")
+		}
+		return elt, nil
+	}
+	if v.arrdata != nil {
+		return nil, os.NewError("can't get: variable is array")
+	}
 	return v.obj, nil
 }
 
@@ -595,6 +648,9 @@ func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
 	oind := 0
 	for _, t := range toks {
 		rc = t.Eval(i)
+		if rc != kTclOK {
+			break
+		}
 		if t.IsExpand() {
 			rlist, e := i.retval.AsList()
 			if e != nil {
