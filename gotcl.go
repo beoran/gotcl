@@ -516,16 +516,12 @@ func (i *Interp) SetCmd(name string, cmd TclCmd) {
 }
 
 func (i *Interp) eval(cmds []Command) TclStatus {
-	for ind, c := range cmds {
-		res := i.evalCmd(c)
-		if res != kTclOK {
-			return res
-		}
-		if ind == len(cmds)-1 {
-			return res
-		}
+	max := len(cmds)
+	var res TclStatus
+	for ind := 0; ind < max && res == 0; ind++ {
+		res = i.evalCmd(cmds[ind])
 	}
-	return kTclOK
+	return res
 }
 
 func (i *Interp) GetVarMap(global bool) VarMap {
@@ -651,7 +647,10 @@ func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
 		if rc != kTclOK {
 			break
 		}
-		if t.IsExpand() {
+		if !t.IsExpand() {
+			res[oind] = i.retval
+			oind++
+		} else {
 			rlist, e := i.retval.AsList()
 			if e != nil {
 				i.err = e
@@ -663,12 +662,6 @@ func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
 				res = nres
 			}
 			oind += copy(res[oind:], rlist)
-		} else {
-			res[oind] = i.retval
-			oind++
-		}
-		if rc != kTclOK {
-			break
 		}
 	}
 	return res[0:oind], rc
