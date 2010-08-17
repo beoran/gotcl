@@ -150,7 +150,8 @@ func (bb *binOpNode) Eval(i *Interp) TclStatus {
 	if e != nil {
 		return i.Fail(e)
 	}
-	return i.Return(r)
+	i.retval = r
+	return kTclOK
 }
 
 func (bb *binOpNode) String() string {

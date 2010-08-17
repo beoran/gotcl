@@ -116,7 +116,8 @@ func (v varRef) Eval(i *Interp) TclStatus {
 	if e != nil {
 		return i.Fail(e)
 	}
-	return i.Return(x)
+	i.retval = x
+	return kTclOK
 }
 
 func (v varRef) String() string {

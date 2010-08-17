@@ -19,8 +19,7 @@ func tclSet(i *Interp, args []*TclObj) TclStatus {
 	}
 	if len(args) == 2 {
 		val := args[1]
-		i.SetVar(args[0].AsVarRef(), val)
-		return i.Return(val)
+		return i.SetVar(args[0].AsVarRef(), val)
 	}
 	v, e := i.GetVar(args[0].AsVarRef())
 	if e != nil {
@@ -106,9 +105,7 @@ func tclIncr(i *Interp, args []*TclObj) TclStatus {
 	if err != nil {
 		return i.Fail(err)
 	}
-	res := FromInt(iv + inc)
-	i.SetVar(vn, res)
-	return i.Return(res)
+	return i.SetVar(vn, FromInt(iv+inc))
 }
 
 func tclReturn(i *Interp, args []*TclObj) TclStatus {
