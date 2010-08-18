@@ -8,23 +8,25 @@ import (
 
 var tclChans = make(map[string]chan *TclObj)
 
-var chanindex = 0
-
-func nextchanname() string {
-	chanindex++
-	return fmt.Sprintf("chan%d", chanindex)
-}
+var channames = make(chan string)
 
 func init() {
 	for k, v := range tclChanCmds {
 		tclBasicCmds[k] = v
 	}
+	go func() {
+		i := 0
+		for {
+			channames <- fmt.Sprintf("chan%d", i)
+			i++
+		}
+	}()
 }
 
-var chanMutex sync.Mutex
+var chanMutex sync.RWMutex
 
 func makechan() string {
-	name := nextchanname()
+	name := <-channames
 	ch := make(chan *TclObj)
 	chanMutex.Lock()
 	tclChans[name] = ch
@@ -33,9 +35,9 @@ func makechan() string {
 }
 
 func getchan(name string) (res chan *TclObj) {
-	chanMutex.Lock()
+	chanMutex.RLock()
 	res = tclChans[name]
-	chanMutex.Unlock()
+	chanMutex.RUnlock()
 	return
 }
 

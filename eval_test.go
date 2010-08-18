@@ -92,7 +92,7 @@ func BenchmarkSumTo(b *testing.B) {
 proc sum_to {n} {
     set x 0
     for { set i 0 } { $i < $n } { incr i } {
-        set x [+ $x 1]
+        set x [+ $x $i]
     }
 }
 `
