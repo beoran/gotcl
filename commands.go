@@ -757,7 +757,7 @@ func tclSource(i *Interp, args []*TclObj) TclStatus {
 	if pe != nil {
 		return i.Fail(pe)
 	}
-	return i.eval(cmds)
+	return i.evalCmds(cmds)
 }
 
 func splitWith(s string, fn func(int) bool) []string {

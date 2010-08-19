@@ -15,10 +15,18 @@ func (ne notExpand) IsExpand() bool {
 	return false
 }
 
+
 type tliteral struct {
 	notExpand
 	strval string
 	tval   *TclObj
+}
+
+func (l *tliteral) AsTclObj() *TclObj {
+	if l.tval == nil {
+		l.tval = FromStr(l.strval)
+	}
+	return l.tval
 }
 
 func (l *tliteral) String() string { return l.strval }
@@ -37,7 +45,7 @@ type subcommand struct {
 
 func (s *subcommand) String() string { return "[" + s.cmd.String() + "]" }
 func (s *subcommand) Eval(i *Interp) TclStatus {
-	return i.evalCmd(s.cmd)
+	return s.cmd.eval(i)
 }
 
 type block struct {
@@ -47,6 +55,13 @@ type block struct {
 }
 
 func (b *block) String() string { return "{" + b.strval + "}" }
+
+func (b *block) AsTclObj() *TclObj {
+	if b.tval == nil {
+		b.tval = FromStr(b.strval)
+	}
+	return b.tval
+}
 
 func (b *block) Eval(i *Interp) TclStatus {
 	if b.tval == nil {
@@ -145,8 +160,42 @@ func toVarRef(s string) varRef {
 	return varRef{name: s, is_global: global}
 }
 
+type simpleCall struct {
+	cmdname string
+	args    []*TclObj
+}
+
 type Command struct {
-	words []TclTok
+	words     []TclTok
+	no_expand bool
+	simple    *simpleCall
+}
+
+type simpleTok interface {
+	AsTclObj() *TclObj
+}
+
+func MakeCommand(words []TclTok) Command {
+	all_simpletok := true
+	has_expand := false
+	var simple *simpleCall
+	for _, w := range words {
+		if all_simpletok {
+			if _, ok := w.(simpleTok); !ok {
+				all_simpletok = false
+			}
+		}
+		has_expand = has_expand || w.IsExpand()
+
+	}
+	if all_simpletok && len(words) > 0 {
+		args := make([]*TclObj, len(words))
+		for i := range args {
+			args[i] = words[i].(simpleTok).AsTclObj()
+		}
+		simple = &simpleCall{cmdname: args[0].AsString(), args: args[1:]}
+	}
+	return Command{words: words, simple: simple, no_expand: !has_expand}
 }
 
 func (c *Command) String() string {
@@ -412,7 +461,7 @@ func (i *Interp) EvalObj(obj *TclObj) TclStatus {
 	if e != nil {
 		return i.Fail(e)
 	}
-	return i.eval(cmds)
+	return i.evalCmds(cmds)
 }
 
 type argsig struct {
@@ -465,7 +514,7 @@ func makeProc(sig []*TclObj, body *TclObj) TclCmd {
 			i.frame = i.frame.up()
 			return i.Fail(be)
 		}
-		rc := i.eval(cmds)
+		rc := i.evalCmds(cmds)
 		if rc == kTclReturn {
 			rc = kTclOK
 		}
@@ -516,11 +565,11 @@ func (i *Interp) SetCmd(name string, cmd TclCmd) {
 	}
 }
 
-func (i *Interp) eval(cmds []Command) TclStatus {
+func (i *Interp) evalCmds(cmds []Command) TclStatus {
 	max := len(cmds)
 	var res TclStatus
 	for ind := 0; ind < max && res == 0; ind++ {
-		res = i.evalCmd(cmds[ind])
+		res = cmds[ind].eval(i)
 	}
 	return res
 }
@@ -639,7 +688,7 @@ func (i *Interp) GetVar(vr varRef) (*TclObj, os.Error) {
 	return v.obj, nil
 }
 
-func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
+func evalArgs(i *Interp, toks []TclTok, no_expand bool) ([]*TclObj, TclStatus) {
 	res := make([]*TclObj, len(toks))
 	rc := kTclOK
 	oind := 0
@@ -648,7 +697,7 @@ func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
 		if rc != kTclOK {
 			break
 		}
-		if !t.IsExpand() {
+		if no_expand || !t.IsExpand() {
 			res[oind] = i.retval
 			oind++
 		} else {
@@ -670,11 +719,16 @@ func evalArgs(i *Interp, toks []TclTok) ([]*TclObj, TclStatus) {
 
 func (i *Interp) ClearError() { i.err = nil }
 
-func (i *Interp) evalCmd(cmd Command) TclStatus {
+func (cmd Command) eval(i *Interp) TclStatus {
 	if len(cmd.words) == 0 {
 		return i.Return(kNil)
 	}
-	args, rc := evalArgs(i, cmd.words)
+	if cmd.simple != nil {
+		if f, ok := i.cmds[cmd.simple.cmdname]; ok {
+			return f(i, cmd.simple.args)
+		}
+	}
+	args, rc := evalArgs(i, cmd.words, cmd.no_expand)
 	if rc != kTclOK {
 		return rc
 	}
@@ -697,7 +751,7 @@ func (i *Interp) Run(in io.Reader) (*TclObj, os.Error) {
 	if e != nil {
 		return nil, e
 	}
-	r := i.eval(cmds)
+	r := i.evalCmds(cmds)
 	if r == kTclOK {
 		if i.retval == nil {
 			return kNil, nil
