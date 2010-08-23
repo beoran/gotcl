@@ -19,10 +19,10 @@ func formatNames(sv []string) string {
 
 type ensembleSpec map[string]interface{}
 
-func (es ensembleSpec) MakeCmd() TclCmd {
+func (es ensembleSpec) makeCmd() TclCmd {
 	cmds := make(map[string]TclCmd, len(es))
 	for k, v := range es {
-		cmds[k] = to_cmd(v)
+		cmds[k] = MakeCmd(v)
 	}
 	return func(i *Interp, args []*TclObj) TclStatus {
 		if len(args) == 0 {

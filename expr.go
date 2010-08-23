@@ -167,7 +167,7 @@ type binaryOp struct {
 	special    func(*Interp, eterm, eterm) TclStatus
 }
 
-var BinOps = [...]*binaryOp{
+var binOps = [...]*binaryOp{
 	plusOp, minusOp, timesOp, xorOp, divideOp, lshiftOp, rshiftOp,
 	equalsOp, notEqualsOp, andOp, orOp, gtOp, gteOp, ltOp, lteOp,
 }

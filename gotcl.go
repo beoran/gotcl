@@ -11,7 +11,7 @@ import (
 
 type notExpand struct{}
 
-func (ne notExpand) IsExpand() bool {
+func (ne notExpand) isExpand() bool {
 	return false
 }
 
@@ -74,7 +74,7 @@ type expandTok struct {
 	subject TclTok
 }
 
-func (e *expandTok) IsExpand() bool {
+func (e *expandTok) isExpand() bool {
 	return true
 }
 
@@ -185,7 +185,7 @@ func makeCommand(words []TclTok) Command {
 				all_simpletok = false
 			}
 		}
-		has_expand = has_expand || w.IsExpand()
+		has_expand = has_expand || w.isExpand()
 
 	}
 	if all_simpletok && len(words) > 0 {
@@ -215,7 +215,7 @@ func (c *Command) String() string {
 type TclTok interface {
 	String() string
 	Eval(i *Interp) TclStatus
-	IsExpand() bool
+	isExpand() bool
 }
 
 const (
@@ -697,7 +697,7 @@ func evalArgs(i *Interp, toks []TclTok, no_expand bool) ([]*TclObj, TclStatus) {
 		if rc != kTclOK {
 			break
 		}
-		if no_expand || !t.IsExpand() {
+		if no_expand || !t.isExpand() {
 			res[oind] = i.retval
 			oind++
 		} else {

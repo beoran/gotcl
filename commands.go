@@ -312,11 +312,8 @@ func asInts(a *TclObj, b *TclObj) (ai int, bi int, e os.Error) {
 	return
 }
 
+// Try to convert an arbitrary function to a TclCmd based on type.
 func MakeCmd(fni interface{}) TclCmd {
-	return to_cmd(fni)
-}
-
-func to_cmd(fni interface{}) TclCmd {
 	switch fn := fni.(type) {
 	case func(*Interp, []*TclObj) TclStatus:
 		return fn
@@ -853,12 +850,12 @@ func tclApply(i *Interp, args []*TclObj) TclStatus {
 var tclBasicCmds = make(map[string]TclCmd)
 
 func init() {
-	for _, o := range BinOps {
-		tclBasicCmds[o.name] = to_cmd(o.action)
+	for _, o := range binOps {
+		tclBasicCmds[o.name] = MakeCmd(o.action)
 	}
 	initCmds := map[string]TclCmd{
 		"apply":    tclApply,
-		"array":    arrayEn.MakeCmd(),
+		"array":    arrayEn.makeCmd(),
 		"break":    tclBreak,
 		"catch":    tclCatch,
 		"concat":   tclConcat,
@@ -872,7 +869,7 @@ func init() {
 		"gets":     tclGets,
 		"if":       tclIf,
 		"incr":     tclIncr,
-		"info":     infoEn.MakeCmd(),
+		"info":     infoEn.makeCmd(),
 		"lappend":  tclLappend,
 		"lindex":   tclLindex,
 		"list":     tclList,
@@ -885,7 +882,7 @@ func init() {
 		"set":      tclSet,
 		"source":   tclSource,
 		"split":    tclSplit,
-		"string":   stringEn.MakeCmd(),
+		"string":   stringEn.makeCmd(),
 		"time":     tclTime,
 		"unset":    tclUnset,
 		"uplevel":  tclUplevel,
