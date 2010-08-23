@@ -634,13 +634,13 @@ func getVarNameList(m VarMap) *TclObj {
 	return fromList(results)
 }
 
-var infoEn = EnsembleSpec{
+var infoEn = ensembleSpec{
 	"exists": varExists,
 	"vars": func(i *Interp) *TclObj {
-		return getVarNameList(i.GetVarMap(false))
+		return getVarNameList(i.getVarMap(false))
 	},
 	"globals": func(i *Interp) *TclObj {
-		return getVarNameList(i.GetVarMap(true))
+		return getVarNameList(i.getVarMap(true))
 	},
 	"commands": getCmdNames,
 }
@@ -681,7 +681,7 @@ func getCmdNames(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(fromList(cmds[0:ind]))
 }
 
-var stringEn = EnsembleSpec{
+var stringEn = ensembleSpec{
 	"length":     utf8.RuneCountInString,
 	"bytelength": func(s string) int { return len(s) },
 	"trim":       strings.TrimSpace,
@@ -708,7 +708,7 @@ func strIndex(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(FromStr(str[ind : ind+1]))
 }
 
-var arrayEn = EnsembleSpec{
+var arrayEn = ensembleSpec{
 	"size": arraySize,
 	"get":  arrayGet,
 }

@@ -110,7 +110,7 @@ func (t strlit) String() string {
 func (t strlit) Eval(i *Interp) TclStatus {
 	var res bytes.Buffer
 	for _, tok := range t.toks {
-		s, rc := tok.EvalStr(i)
+		s, rc := tok.evalStr(i)
 		if rc != kTclOK {
 			return rc
 		}
@@ -175,7 +175,7 @@ type simpleTok interface {
 	AsTclObj() *TclObj
 }
 
-func MakeCommand(words []TclTok) Command {
+func makeCommand(words []TclTok) Command {
 	all_simpletok := true
 	has_expand := false
 	var simple *simpleCall
@@ -231,7 +231,7 @@ type littok struct {
 	subcmd *subcommand
 }
 
-func (lt *littok) EvalStr(i *Interp) (string, TclStatus) {
+func (lt *littok) evalStr(i *Interp) (string, TclStatus) {
 	switch lt.kind {
 	case kRaw:
 		return lt.value, kTclOK
@@ -435,7 +435,7 @@ func (t *TclObj) AsList() ([]*TclObj, os.Error) {
 
 func (t *TclObj) asExpr() (eterm, os.Error) {
 	if t.exprval == nil {
-		ev, err := ParseExpr(strings.NewReader(t.AsString()))
+		ev, err := parseExpr(strings.NewReader(t.AsString()))
 		if err != nil {
 			return nil, err
 		}
@@ -574,7 +574,7 @@ func (i *Interp) evalCmds(cmds []Command) TclStatus {
 	return res
 }
 
-func (i *Interp) GetVarMap(global bool) VarMap {
+func (i *Interp) getVarMap(global bool) VarMap {
 	f := i.frame
 	if global {
 		for f.next != nil {
@@ -590,7 +590,7 @@ func (i *Interp) LinkVar(level int, theirs, mine string) {
 		theirf = theirf.up()
 		level--
 	}
-	m := i.GetVarMap(false)
+	m := i.getVarMap(false)
 	m[mine] = &varEntry{link: &framelink{theirf, theirs}}
 }
 
@@ -599,7 +599,7 @@ func (i *Interp) SetVarRaw(name string, val *TclObj) {
 }
 
 func (i *Interp) SetVar(vr varRef, val *TclObj) TclStatus {
-	m := i.GetVarMap(vr.is_global)
+	m := i.getVarMap(vr.is_global)
 	if val == nil {
 		m[vr.name] = nil, false
 		return kTclOK
@@ -641,7 +641,7 @@ func (i *Interp) GetVarRaw(name string) (*TclObj, os.Error) {
 }
 
 func (i *Interp) getArray(vr varRef) (*varEntry, os.Error) {
-	v, ok := i.GetVarMap(vr.is_global)[vr.name]
+	v, ok := i.getVarMap(vr.is_global)[vr.name]
 	if !ok {
 		return nil, os.NewError("variable not found: " + vr.String())
 	}
@@ -658,7 +658,7 @@ func (i *Interp) getArray(vr varRef) (*varEntry, os.Error) {
 }
 
 func (i *Interp) GetVar(vr varRef) (*TclObj, os.Error) {
-	v, ok := i.GetVarMap(vr.is_global)[vr.name]
+	v, ok := i.getVarMap(vr.is_global)[vr.name]
 	if !ok {
 		return nil, os.NewError("variable not found: " + vr.String())
 	}

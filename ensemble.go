@@ -17,9 +17,9 @@ func formatNames(sv []string) string {
 	return strings.Join(sv[0:len(sv)-1], ", ") + ", or " + sv[len(sv)-1]
 }
 
-type EnsembleSpec map[string]interface{}
+type ensembleSpec map[string]interface{}
 
-func (es EnsembleSpec) MakeCmd() TclCmd {
+func (es ensembleSpec) MakeCmd() TclCmd {
 	cmds := make(map[string]TclCmd, len(es))
 	for k, v := range es {
 		cmds[k] = to_cmd(v)

@@ -297,7 +297,7 @@ func balance(b *binOpNode) eterm {
 	return b
 }
 
-func ParseExpr(in RuneSource) (item eterm, err os.Error) {
+func parseExpr(in RuneSource) (item eterm, err os.Error) {
 	p := newParser(in)
 	defer setError(&err)
 	item = p.parseExpr()

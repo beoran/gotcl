@@ -130,7 +130,7 @@ func (p *parser) parseSubcommand() *subcommand {
 		p.eatWhile(issepspace)
 	}
 	p.consumeRune(']')
-	return &subcommand{cmd: MakeCommand(res)}
+	return &subcommand{cmd: makeCommand(res)}
 }
 
 func (p *parser) parseBlockData() string {
@@ -374,7 +374,7 @@ func (p *parser) parseCommand() Command {
 		appendttok(&res, p.parseToken())
 		p.eatWhile(issepspace)
 	}
-	return MakeCommand(res)
+	return makeCommand(res)
 }
 
 func (p *parser) parseToken() TclTok {

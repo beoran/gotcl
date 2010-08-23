@@ -51,7 +51,7 @@ func TestCloseBraceExtra(t *testing.T) {
 
 func testExpr(t *testing.T, vvals map[string]string, et exprtest) {
 	s := et.code
-	exp, e := ParseExpr(strings.NewReader(s))
+	exp, e := parseExpr(strings.NewReader(s))
 	if e != nil {
 		t.Errorf("%#v → %v\n", s, e)
 	} else {
