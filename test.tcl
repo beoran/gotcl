@@ -491,6 +491,16 @@ test {array get} {
     expect [array get x] == {10 20}
 }
 
+test {array set} {
+    assert_err {
+        array set foobar { 0 zero 1 }
+    }
+    array set whee { 0 zero 1 one 2 two }
+    expect $whee(0) == "zero"
+    expect $whee(1) == "one"
+    expect $whee(2) == "two"
+}
+
 test { expand syntax } {
     set ll {x yes}
     set x no

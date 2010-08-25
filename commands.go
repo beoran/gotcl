@@ -708,6 +708,7 @@ func strIndex(i *Interp, args []*TclObj) TclStatus {
 var arrayEn = ensembleSpec{
 	"size": arraySize,
 	"get":  arrayGet,
+	"set":  arraySet,
 }
 
 func arraySize(i *Interp, args []*TclObj) TclStatus {
@@ -737,6 +738,25 @@ func arrayGet(i *Interp, args []*TclObj) TclStatus {
 		ind += 2
 	}
 	return i.Return(fromList(res[0:ind]))
+}
+
+func arraySet(it *Interp, args []*TclObj) TclStatus {
+	if len(args) != 2 {
+		return it.FailStr("wrong # args")
+	}
+	items, e := args[1].AsList()
+	if e != nil {
+		return it.Fail(e)
+	}
+	vn := args[0].AsVarRef()
+	if len(items)&1 != 0 {
+		return it.FailStr("list must have even number of elements")
+	}
+	for i := 0; i < len(items)-1; i++ {
+		vn.arrind = &tliteral{strval: items[i].AsString()}
+		it.SetVar(vn, items[i+1])
+	}
+	return it.Return(kNil)
 }
 
 
