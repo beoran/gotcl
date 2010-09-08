@@ -709,6 +709,13 @@ var arrayEn = ensembleSpec{
 	"size": arraySize,
 	"get":  arrayGet,
 	"set":  arraySet,
+	"exists": func(i *Interp, args []*TclObj) TclStatus {
+		if len(args) != 1 {
+			return i.FailStr("wrong # args")
+		}
+		_, e := i.getArray(args[0].AsVarRef())
+		return i.Return(FromBool(e == nil))
+	},
 }
 
 func arraySize(i *Interp, args []*TclObj) TclStatus {
@@ -758,7 +765,6 @@ func arraySet(it *Interp, args []*TclObj) TclStatus {
 	}
 	return it.Return(kNil)
 }
-
 
 func tclSource(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {

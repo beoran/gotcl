@@ -501,6 +501,14 @@ test {array set} {
     expect $whee(2) == "two"
 }
 
+test {array exsits} {
+    expect [array exists wharg] == 0
+    array set wharg {a b c d}
+    expect [array exists wharg] == 1
+    set x 11
+    expect [array exists x] == 0
+}
+
 test { expand syntax } {
     set ll {x yes}
     set x no
