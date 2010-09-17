@@ -248,7 +248,7 @@ func appendtok(tx *[]littok, t littok) {
 		copy(newsl, *tx)
 		*tx = newsl
 	}
-	*tx = (*tx)[0 : oldlen+1]
+	*tx = (*tx)[:oldlen+1]
 	(*tx)[oldlen] = t
 }
 
@@ -317,7 +317,7 @@ func appendcmd(tx *[]Command, t Command) {
 		copy(newsl, *tx)
 		*tx = newsl
 	}
-	*tx = (*tx)[0 : oldlen+1]
+	*tx = (*tx)[:oldlen+1]
 	(*tx)[oldlen] = t
 }
 
@@ -342,7 +342,7 @@ func appendttok(tx *[]TclTok, t TclTok) {
 		copy(newsl, *tx)
 		*tx = newsl
 	}
-	*tx = (*tx)[0 : oldlen+1]
+	*tx = (*tx)[:oldlen+1]
 	(*tx)[oldlen] = t
 }
 

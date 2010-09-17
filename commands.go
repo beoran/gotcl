@@ -47,7 +47,14 @@ func tclUplevel(i *Interp, args []*TclObj) TclStatus {
 	return rc
 }
 
-var uniqueNum int = 0
+var getUniqueNum = func() func() int {
+	uniqueNum := 0
+	return func() int {
+		v := uniqueNum
+		uniqueNum++
+		return v
+	}
+}()
 
 func tclOpen(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
@@ -58,8 +65,7 @@ func tclOpen(i *Interp, args []*TclObj) TclStatus {
 	if err != nil {
 		return i.Fail(err)
 	}
-	channame := fmt.Sprintf("file%d", uniqueNum)
-	uniqueNum++
+	channame := fmt.Sprintf("file%d", getUniqueNum())
 	i.chans[channame] = bufio.NewReader(ff)
 	return i.Return(FromStr(channame))
 }
@@ -494,7 +500,7 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 		dest = make([]*TclObj, new_len, 2*new_len+4)
 		copy(dest, items)
 	}
-	dest = dest[0:new_len]
+	dest = dest[:new_len]
 	copy(dest[len(items):], new_items)
 	newobj := fromList(dest)
 	i.SetVar(vname, newobj)
@@ -608,7 +614,7 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 		eof = true
 	}
 	if len(str) > 0 {
-		str = str[0 : len(str)-1]
+		str = str[:len(str)-1]
 	}
 	if len(args) == 2 {
 		i.SetVar(args[1].AsVarRef(), FromStr(str))
@@ -675,7 +681,7 @@ func getCmdNames(i *Interp, args []*TclObj) TclStatus {
 			ind++
 		}
 	}
-	return i.Return(fromList(cmds[0:ind]))
+	return i.Return(fromList(cmds[:ind]))
 }
 
 var stringEn = ensembleSpec{
@@ -744,7 +750,7 @@ func arrayGet(i *Interp, args []*TclObj) TclStatus {
 		res[ind+1] = v
 		ind += 2
 	}
-	return i.Return(fromList(res[0:ind]))
+	return i.Return(fromList(res[:ind]))
 }
 
 func arraySet(it *Interp, args []*TclObj) TclStatus {

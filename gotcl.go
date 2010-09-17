@@ -568,7 +568,7 @@ func (i *Interp) SetCmd(name string, cmd TclCmd) {
 func (i *Interp) evalCmds(cmds []Command) TclStatus {
 	max := len(cmds)
 	var res TclStatus
-	for ind := 0; ind < max && res == 0; ind++ {
+	for ind := 0; ind < max && res == kTclOK; ind++ {
 		res = cmds[ind].eval(i)
 	}
 	return res
