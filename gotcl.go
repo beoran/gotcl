@@ -276,7 +276,6 @@ type stackframe struct {
 func newstackframe(tail *stackframe) *stackframe {
 	return &stackframe{make(VarMap), tail}
 }
-func (s *stackframe) up() *stackframe { return s.next }
 
 type Interp struct {
 	cmds   map[string]TclCmd
@@ -511,14 +510,14 @@ func makeProc(sig []*TclObj, body *TclObj) TclCmd {
 	return func(i *Interp, args []*TclObj) TclStatus {
 		i.frame = newstackframe(i.frame)
 		if be := i.bindArgs(sigs, args); be != nil {
-			i.frame = i.frame.up()
+			i.frame = i.frame.next
 			return i.Fail(be)
 		}
 		rc := i.evalCmds(cmds)
 		if rc == kTclReturn {
 			rc = kTclOK
 		}
-		i.frame = i.frame.up()
+		i.frame = i.frame.next
 		return rc
 	}
 }
@@ -565,10 +564,10 @@ func (i *Interp) SetCmd(name string, cmd TclCmd) {
 	}
 }
 
+
 func (i *Interp) evalCmds(cmds []Command) TclStatus {
-	max := len(cmds)
 	var res TclStatus
-	for ind := 0; ind < max && res == kTclOK; ind++ {
+	for ind := 0; ind < len(cmds) && res == kTclOK; ind++ {
 		res = cmds[ind].eval(i)
 	}
 	return res
@@ -587,7 +586,7 @@ func (i *Interp) getVarMap(global bool) VarMap {
 func (i *Interp) LinkVar(level int, theirs, mine string) {
 	theirf := i.frame
 	for level > 0 {
-		theirf = theirf.up()
+		theirf = theirf.next
 		level--
 	}
 	m := i.getVarMap(false)

@@ -41,7 +41,7 @@ func tclUplevel(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args")
 	}
 	orig_frame := i.frame
-	i.frame = i.frame.up()
+	i.frame = i.frame.next
 	rc := i.EvalObj(args[0])
 	i.frame = orig_frame
 	return rc
