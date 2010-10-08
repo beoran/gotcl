@@ -385,6 +385,12 @@ test {info exists} {
     assert [info exists x] == 0
 }
 
+test {info cmdcount} {
+    set x [info cmdcount]
+    set y [info cmdcount]
+    assert $x < $y
+}
+
 test {lsearch} {
     assert [lsearch {a b c d} b] == 1
     assert [lsearch {a b c d} z] == -1

@@ -278,11 +278,12 @@ func newstackframe(tail *stackframe) *stackframe {
 }
 
 type Interp struct {
-	cmds   map[string]TclCmd
-	chans  map[string]interface{}
-	frame  *stackframe
-	retval *TclObj
-	err    os.Error
+	cmds     map[string]TclCmd
+	chans    map[string]interface{}
+	frame    *stackframe
+	retval   *TclObj
+	err      os.Error
+	cmdcount int
 }
 
 func (i *Interp) Return(val *TclObj) TclStatus {
@@ -719,6 +720,7 @@ func evalArgs(i *Interp, toks []TclTok, no_expand bool) ([]*TclObj, TclStatus) {
 func (i *Interp) ClearError() { i.err = nil }
 
 func (cmd Command) eval(i *Interp) TclStatus {
+	i.cmdcount++
 	if len(cmd.words) == 0 {
 		return i.Return(kNil)
 	}

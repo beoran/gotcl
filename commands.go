@@ -646,6 +646,9 @@ var infoEn = ensembleSpec{
 		return getVarNameList(i.getVarMap(true))
 	},
 	"commands": getCmdNames,
+	"cmdcount": func(i *Interp) *TclObj {
+		return FromInt(i.cmdcount)
+	},
 }
 
 func varExists(i *Interp, args []*TclObj) TclStatus {
