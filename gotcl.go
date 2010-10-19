@@ -386,11 +386,11 @@ func FromStr(s string) *TclObj {
 }
 
 var kTrue, kFalse *TclObj
-var smallInts [256]*TclObj
+var smallInts [256]TclObj
 
 func init() {
 	for i := range smallInts {
-		smallInts[i] = &TclObj{intval: i, has_intval: true}
+		smallInts[i] = TclObj{intval: i, has_intval: true}
 	}
 	kTrue = FromInt(1)
 	kFalse = FromInt(0)
@@ -398,7 +398,7 @@ func init() {
 
 func FromInt(i int) *TclObj {
 	if i >= 0 && i < len(smallInts) {
-		return smallInts[i]
+		return &smallInts[i]
 	}
 	return &TclObj{intval: i, has_intval: true}
 }
