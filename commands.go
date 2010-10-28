@@ -494,14 +494,9 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 		return i.Fail(err)
 	}
 	new_items := args[1:]
-	dest := items
 	new_len := len(items) + len(new_items)
-	if cap(dest) < new_len {
-		dest = make([]*TclObj, new_len, 2*new_len+4)
-		copy(dest, items)
-	}
-	dest = dest[:new_len]
-	copy(dest[len(items):], new_items)
+	dest := make([]*TclObj, 0, new_len)
+	dest = append(append(dest, items...), new_items...)
 	newobj := fromList(dest)
 	i.SetVar(vname, newobj)
 	return i.Return(newobj)

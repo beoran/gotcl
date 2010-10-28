@@ -206,6 +206,15 @@ test {lappend} {
     assert [llength $x] == 6
 }
 
+test {lappend more} {
+    set x [list 1 2]
+    set y $x
+    set z $x
+    lappend y 3 4 5
+    lappend z 9 9 9
+    assert $y != $z
+}
+
 test {args} {
     proc count_args {args} {
         return [llength $args]

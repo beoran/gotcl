@@ -126,7 +126,7 @@ func (p *parser) parseSubcommand() *subcommand {
 	res := make([]TclTok, 0, 16)
 	p.eatWhile(issepspace)
 	for p.ch != ']' {
-		appendttok(&res, p.parseToken())
+		res = append(res, p.parseToken())
 		p.eatWhile(issepspace)
 	}
 	p.consumeRune(']')
@@ -240,25 +240,13 @@ func (p *parser) parseListStringLit() string {
 	panic("unreachable")
 }
 
-func appendtok(tx *[]littok, t littok) {
-	oldlen := len(*tx)
-	if oldlen == cap(*tx) {
-		newcap := 1 + (cap(*tx)+1)*2
-		newsl := make([]littok, oldlen, newcap)
-		copy(newsl, *tx)
-		*tx = newsl
-	}
-	*tx = (*tx)[:oldlen+1]
-	(*tx)[oldlen] = t
-}
-
 func (p *parser) parseStringLit() strlit {
 	p.consumeRune('"')
 	var accum bytes.Buffer
 	toks := make([]littok, 0, 8)
 	record_accum := func() {
 		if accum.Len() != 0 {
-			appendtok(&toks, littok{kind: kRaw, value: accum.String()})
+			toks = append(toks, littok{kind: kRaw, value: accum.String()})
 			accum.Reset()
 		}
 	}
@@ -271,11 +259,11 @@ func (p *parser) parseStringLit() strlit {
 		case '$':
 			record_accum()
 			vref := p.parseVariable()
-			appendtok(&toks, littok{kind: kVar, varref: &vref})
+			toks = append(toks, littok{kind: kVar, varref: &vref})
 		case '[':
 			record_accum()
 			subcmd := p.parseSubcommand()
-			appendtok(&toks, littok{kind: kSubcmd, subcmd: subcmd})
+			toks = append(toks, littok{kind: kSubcmd, subcmd: subcmd})
 		case '\\':
 			p.advance()
 			accum.WriteString(escaped(p.advance()))
@@ -309,18 +297,6 @@ func (p *parser) parseComment() {
 	p.eatWhile(func(c int) bool { return c != '\n' })
 }
 
-func appendcmd(tx *[]Command, t Command) {
-	oldlen := len(*tx)
-	if oldlen == cap(*tx) {
-		newcap := 1 + (cap(*tx)+1)*2
-		newsl := make([]Command, oldlen, newcap)
-		copy(newsl, *tx)
-		*tx = newsl
-	}
-	*tx = (*tx)[:oldlen+1]
-	(*tx)[oldlen] = t
-}
-
 func (p *parser) parseCommands() []Command {
 	res := make([]Command, 0, 128)
 	p.eatSpace()
@@ -328,22 +304,11 @@ func (p *parser) parseCommands() []Command {
 		if p.ch == '#' {
 			p.parseComment()
 		} else {
-			appendcmd(&res, p.parseCommand())
+			res = append(res, p.parseCommand())
 		}
 		p.eatExtra()
 	}
 	return res
-}
-
-func appendttok(tx *[]TclTok, t TclTok) {
-	oldlen := len(*tx)
-	if oldlen == cap(*tx) {
-		newsl := make([]TclTok, oldlen, (cap(*tx)+1)*2)
-		copy(newsl, *tx)
-		*tx = newsl
-	}
-	*tx = (*tx)[:oldlen+1]
-	(*tx)[oldlen] = t
 }
 
 func notspace(c int) bool { return !unicode.IsSpace(c) }
@@ -368,10 +333,10 @@ Loop:
 
 func (p *parser) parseCommand() Command {
 	res := make([]TclTok, 0, 16)
-	appendttok(&res, p.parseToken())
+	res = append(res, p.parseToken())
 	p.eatWhile(issepspace)
 	for !isEol(p.ch) {
-		appendttok(&res, p.parseToken())
+		res = append(res, p.parseToken())
 		p.eatWhile(issepspace)
 	}
 	return makeCommand(res)

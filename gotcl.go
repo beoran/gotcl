@@ -689,32 +689,25 @@ func (i *Interp) GetVar(vr varRef) (*TclObj, os.Error) {
 }
 
 func evalArgs(i *Interp, toks []TclTok, no_expand bool) ([]*TclObj, TclStatus) {
-	res := make([]*TclObj, len(toks))
+	res := make([]*TclObj, 0, len(toks))
 	rc := kTclOK
-	oind := 0
 	for _, t := range toks {
 		rc = t.Eval(i)
 		if rc != kTclOK {
 			break
 		}
 		if no_expand || !t.isExpand() {
-			res[oind] = i.retval
-			oind++
+			res = append(res, i.retval)
 		} else {
 			rlist, e := i.retval.AsList()
 			if e != nil {
 				i.err = e
 				return nil, kTclErr
 			}
-			if len(rlist) > 1 {
-				nres := make([]*TclObj, len(res)+len(rlist))
-				copy(nres, res)
-				res = nres
-			}
-			oind += copy(res[oind:], rlist)
+			res = append(res, rlist...)
 		}
 	}
-	return res[0:oind], rc
+	return res, rc
 }
 
 func (i *Interp) ClearError() { i.err = nil }
