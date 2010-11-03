@@ -3,7 +3,6 @@ package gotcl
 import (
 	"bufio"
 	"bytes"
-	"container/vector"
 	"fmt"
 	"io"
 	"os"
@@ -788,17 +787,17 @@ func tclSource(i *Interp, args []*TclObj) TclStatus {
 }
 
 func splitWith(s string, fn func(int) bool) []string {
-	var res vector.StringVector
+	res := make([]string, 0, 4)
 	for {
 		i := strings.IndexFunc(s, fn)
 		if i == -1 {
-			res.Push(s)
+			res = append(res, s)
 			break
 		}
-		res.Push(s[0:i])
+		res = append(res, s[0:i])
 		s = s[i+1:]
 	}
-	return []string(res)
+	return res
 }
 
 func tclSplit(i *Interp, args []*TclObj) TclStatus {

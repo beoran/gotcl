@@ -4,7 +4,6 @@ import (
 	"os"
 	"bytes"
 	"unicode"
-	"container/vector"
 )
 
 type RuneSource interface {
@@ -313,7 +312,7 @@ func (p *parser) parseCommands() []Command {
 
 func notspace(c int) bool { return !unicode.IsSpace(c) }
 func (p *parser) parseList() []string {
-	var res vector.StringVector
+	res := make([]string, 0, 8)
 Loop:
 	for {
 		p.eatSpace()
@@ -321,14 +320,14 @@ Loop:
 		case -1:
 			break Loop
 		case '{':
-			res.Push(p.parseBlockData())
+			res = append(res, p.parseBlockData())
 		case '"':
-			res.Push(p.parseListStringLit())
+			res = append(res, p.parseListStringLit())
 		default:
-			res.Push(p.consumeWhile1(notspace, "word"))
+			res = append(res, p.consumeWhile1(notspace, "word"))
 		}
 	}
-	return []string(res)
+	return res
 }
 
 func (p *parser) parseCommand() Command {

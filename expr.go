@@ -3,7 +3,6 @@ package gotcl
 import (
 	"os"
 	"unicode"
-	"container/vector"
 	"rand"
 )
 
@@ -382,18 +381,14 @@ func (p *parser) parseExprTerm() eterm {
 func (p *parser) parseFunc(name string) *funcNode {
 	p.consumeRune('(')
 	p.eatSpace()
-	var argsvec vector.Vector
+	fargs := make([]eterm, 0, 2)
 	for p.ch != ')' {
-		argsvec.Push(p.parseExpr())
+		fargs = append(fargs, p.parseExpr())
 		p.eatSpace()
 		if p.ch == ',' {
 			p.advance()
 			p.eatSpace()
 		}
-	}
-	fargs := make([]eterm, argsvec.Len())
-	for i, v := range argsvec {
-		fargs[i] = v.(eterm)
 	}
 	p.advance()
 	return &funcNode{name: name, args: fargs}
