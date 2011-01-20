@@ -509,7 +509,7 @@ func getDuration(i *Interp, code *TclObj) (int64, TclStatus) {
 }
 
 func formatTime(ns int64) string {
-	us := float(ns) / 1000
+	us := float64(ns) / 1000
 	if us < 1000 {
 		return fmt.Sprintf("%v µs", us)
 	}
