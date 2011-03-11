@@ -1,22 +1,19 @@
 package gotcl
 
 import (
+	"io"
 	"os"
 	"bytes"
 	"unicode"
 )
 
-type RuneSource interface {
-	ReadRune() (int, int, os.Error)
-}
-
 type parser struct {
-	data   RuneSource
+	data   io.RuneReader
 	tmpbuf *bytes.Buffer
 	ch     int
 }
 
-func newParser(input RuneSource) *parser {
+func newParser(input io.RuneReader) *parser {
 	p := &parser{data: input, tmpbuf: bytes.NewBuffer(make([]byte, 0, 1024))}
 	p.advance()
 	return p
@@ -365,14 +362,14 @@ func setError(err *os.Error) {
 	}
 }
 
-func ParseList(in RuneSource) (items []string, err os.Error) {
+func ParseList(in io.RuneReader) (items []string, err os.Error) {
 	p := newParser(in)
 	defer setError(&err)
 	items = p.parseList()
 	return
 }
 
-func ParseCommands(in RuneSource) (cmds []Command, err os.Error) {
+func ParseCommands(in io.RuneReader) (cmds []Command, err os.Error) {
 	p := newParser(in)
 	defer setError(&err)
 	cmds = p.parseCommands()

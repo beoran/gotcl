@@ -1,6 +1,7 @@
 package gotcl
 
 import (
+	"io"
 	"os"
 	"unicode"
 	"rand"
@@ -296,7 +297,7 @@ func balance(b *binOpNode) eterm {
 	return b
 }
 
-func parseExpr(in RuneSource) (item eterm, err os.Error) {
+func parseExpr(in io.RuneReader) (item eterm, err os.Error) {
 	p := newParser(in)
 	defer setError(&err)
 	item = p.parseExpr()

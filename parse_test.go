@@ -1,6 +1,7 @@
 package gotcl
 
 import (
+	"io"
 	"bufio"
 	"bytes"
 	"io/ioutil"
@@ -177,7 +178,7 @@ func BenchmarkNoopParse(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		nlcount := 0
-		var reader RuneSource = bufio.NewReader(bytes.NewBuffer(data))
+		var reader io.RuneReader = bufio.NewReader(bytes.NewBuffer(data))
 		done := false
 		for !done {
 			r, _, e := reader.ReadRune()
