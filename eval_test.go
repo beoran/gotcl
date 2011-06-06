@@ -8,7 +8,7 @@ import (
 )
 
 func TestFull(t *testing.T) {
-	file, err := os.Open("test.tcl", os.O_RDONLY, 0)
+	file, err := os.Open("test.tcl")
 	if err != nil {
 		t.Fatal(err)
 	}

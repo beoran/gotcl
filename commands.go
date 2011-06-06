@@ -60,7 +60,7 @@ func tclOpen(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args")
 	}
 	fname := args[0].AsString()
-	ff, err := os.Open(fname, os.O_RDONLY, 0)
+	ff, err := os.Open(fname)
 	if err != nil {
 		return i.Fail(err)
 	}
@@ -774,7 +774,7 @@ func tclSource(i *Interp, args []*TclObj) TclStatus {
 		return i.FailStr("wrong # args")
 	}
 	filename := args[0].AsString()
-	file, e := os.Open(filename, os.O_RDONLY, 0)
+	file, e := os.Open(filename)
 	if e != nil {
 		return i.Fail(e)
 	}
