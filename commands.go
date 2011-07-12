@@ -624,7 +624,7 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 func getVarNameList(m VarMap) *TclObj {
 	results := make([]*TclObj, len(m))
 	ind := 0
-	for vn, _ := range m {
+	for vn := range m {
 		results[ind] = FromStr(vn)
 		ind++
 	}
@@ -672,7 +672,7 @@ func getCmdNames(i *Interp, args []*TclObj) TclStatus {
 	}
 	cmds := make([]*TclObj, len(i.cmds))
 	ind := 0
-	for n, _ := range i.cmds {
+	for n := range i.cmds {
 		if !filtered || GlobMatch(pattern, n) {
 			cmds[ind] = FromStr(n)
 			ind++
@@ -811,7 +811,7 @@ func tclSplit(i *Interp, args []*TclObj) TclStatus {
 	} else if len(args) == 2 {
 		chars := args[1].AsString()
 		if len(chars) == 0 {
-			strs = strings.Split(sin, "", -1)
+			strs = strings.Split(sin, "")
 		} else {
 			strs = splitWith(sin,
 				func(c int) bool { return strings.IndexRune(chars, c) != -1 })
