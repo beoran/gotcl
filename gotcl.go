@@ -9,6 +9,13 @@ import (
 	"strings"
 )
 
+// Simple struct for embedding in every 
+// token except the expand token to mark them
+// as not an expand token.
+// This is gross, but we need to check for expands
+// when evaluating command args, and a type check is
+// measurably slower than a method call.
+// This is probably not worth the complexity.
 type notExpand struct{}
 
 func (ne notExpand) isExpand() bool {
@@ -19,7 +26,7 @@ func (ne notExpand) isExpand() bool {
 type tliteral struct {
 	notExpand
 	strval string
-	tval   *TclObj
+	tval   *TclObj // cached
 }
 
 func (l *tliteral) AsTclObj() *TclObj {
@@ -38,6 +45,7 @@ func (l *tliteral) Eval(i *Interp) TclStatus {
 	return kTclOK
 }
 
+// [w1 w2...]
 type subcommand struct {
 	notExpand
 	cmd Command
@@ -48,6 +56,7 @@ func (s *subcommand) Eval(i *Interp) TclStatus {
 	return s.cmd.eval(i)
 }
 
+// { ... }
 type block struct {
 	notExpand
 	strval string
@@ -70,6 +79,7 @@ func (b *block) Eval(i *Interp) TclStatus {
 	return i.Return(b.tval)
 }
 
+// {*}{...}
 type expandTok struct {
 	subject TclTok
 }
@@ -86,13 +96,41 @@ func (e *expandTok) String() string {
 	return "{*}" + e.subject.String()
 }
 
+// "..."
 type strlit struct {
 	notExpand
 	toks []littok
 }
 
+const (
+	kRaw = iota
+	kVar
+	kSubcmd
+)
+
+type littok struct {
+	kind   int
+	value  string
+	varref *varRef
+	subcmd *subcommand
+}
+
+func (lt *littok) evalStr(i *Interp) (string, TclStatus) {
+	switch lt.kind {
+	case kRaw:
+		return lt.value, kTclOK
+	case kVar:
+		rc := lt.varref.Eval(i)
+		return i.retval.AsString(), rc
+	case kSubcmd:
+		rc := lt.subcmd.Eval(i)
+		return i.retval.AsString(), rc
+	}
+	panic("unrecognized kind")
+}
+
 func (t strlit) String() string {
-	res := bytes.NewBuffer(nil)
+	var res bytes.Buffer
 	res.WriteString(`"`)
 	for _, tok := range t.toks {
 		if tok.kind == kRaw {
@@ -119,6 +157,7 @@ func (t strlit) Eval(i *Interp) TclStatus {
 	return i.Return(FromStr(res.String()))
 }
 
+// $...
 type varRef struct {
 	notExpand
 	is_global bool
@@ -165,12 +204,17 @@ type simpleCall struct {
 	args    []*TclObj
 }
 
+// w1 w2...
 type Command struct {
 	words     []TclTok
 	no_expand bool
 	simple    *simpleCall
 }
 
+// a simpleTok is a token that won't change.
+// As such, we can get it's TclObj value without
+// regard to interpreter state. This is used to 
+// cache evaluated arguments.
 type simpleTok interface {
 	AsTclObj() *TclObj
 }
@@ -218,32 +262,6 @@ type TclTok interface {
 	isExpand() bool
 }
 
-const (
-	kRaw = iota
-	kVar
-	kSubcmd
-)
-
-type littok struct {
-	kind   int
-	value  string
-	varref *varRef
-	subcmd *subcommand
-}
-
-func (lt *littok) evalStr(i *Interp) (string, TclStatus) {
-	switch lt.kind {
-	case kRaw:
-		return lt.value, kTclOK
-	case kVar:
-		rc := lt.varref.Eval(i)
-		return i.retval.AsString(), rc
-	case kSubcmd:
-		rc := lt.subcmd.Eval(i)
-		return i.retval.AsString(), rc
-	}
-	panic("unrecognized kind")
-}
 
 type TclStatus int
 
@@ -567,7 +585,7 @@ func (i *Interp) SetCmd(name string, cmd TclCmd) {
 
 
 func (i *Interp) evalCmds(cmds []Command) TclStatus {
-	var res TclStatus
+	res := kTclOK
 	for ind := 0; ind < len(cmds) && res == kTclOK; ind++ {
 		res = cmds[ind].eval(i)
 	}

@@ -10,7 +10,7 @@ import (
 	"runtime"
 )
 
-var nogc *bool = flag.Bool("nogc", false, "if true, gc is disabled")
+var nogc = flag.Bool("nogc", false, "if true, gc is disabled")
 
 func RunRepl(in io.Reader, out io.Writer, fn func(string) (string, os.Error)) {
 	inbuf := bufio.NewReader(in)
@@ -39,7 +39,7 @@ func RunRepl(in io.Reader, out io.Writer, fn func(string) (string, os.Error)) {
 
 func RunTclRepl(in io.Reader, out io.Writer) {
 	i := gotcl.NewInterp()
-	setArgs(i, os.Args, true)
+	setArgs(i, flag.Args(), true)
 	RunRepl(in, out, func(ln string) (string, os.Error) {
 		res, e := i.EvalString(ln)
 		i.ClearError()
@@ -67,15 +67,16 @@ func main() {
 		runtime.MemStats.EnableGC = false
 		println("GC disabled.")
 	}
-	if flag.NArg() == 1 {
-		filename := flag.Arg(0)
-		file, e := os.Open(filename, os.O_RDONLY, 0)
+    args := flag.Args()
+	if len(args) == 1 {
+		filename := args[0]
+		file, e := os.Open(filename)
 		if e != nil {
 			panic(e.String())
 		}
 		defer file.Close()
 		i := gotcl.NewInterp()
-		setArgs(i, flag.Args(), false)
+		setArgs(i, args, false)
 		_, err := i.Run(file)
 		if err != nil {
 			fmt.Println("Error: " + err.String())
