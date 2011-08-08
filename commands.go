@@ -46,6 +46,10 @@ func tclUplevel(i *Interp, args []*TclObj) TclStatus {
 	return rc
 }
 
+// getUniqueNum returns a unique integer.
+// It is not threadsafe, and it uses a function
+// literal to keep the current value scope hidden.
+// It's a bit too tricky.
 var getUniqueNum = func() func() int {
 	uniqueNum := 0
 	return func() int {
@@ -318,6 +322,7 @@ func asInts(a *TclObj, b *TclObj) (ai int, bi int, e os.Error) {
 }
 
 // Try to convert an arbitrary function to a TclCmd based on type.
+// Panics on failure.
 func MakeCmd(fni interface{}) TclCmd {
 	switch fn := fni.(type) {
 	case func(*Interp, []*TclObj) TclStatus:
