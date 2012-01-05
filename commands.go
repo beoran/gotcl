@@ -927,3 +927,9 @@ func init() {
 		tclBasicCmds[k] = v
 	}
 }
+
+// Register a command to be available in all Interps.
+// Should be called from init().
+func RegisterDefaultCmd(name string, cmd TclCmd) {
+	tclBasicCmds[name] = cmd
+}

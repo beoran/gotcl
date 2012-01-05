@@ -11,7 +11,7 @@ var channames = make(chan string)
 
 func init() {
 	for k, v := range tclChanCmds {
-		tclBasicCmds[k] = v
+		RegisterDefaultCmd(k, v)
 	}
 	go func() {
 		i := 0
