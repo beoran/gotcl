@@ -293,8 +293,8 @@ func (p *parser) parseComment() {
 	p.eatWhile(func(c rune) bool { return c != '\n' })
 }
 
-func (p *parser) parseCommands() []Command {
-	res := make([]Command, 0, 128)
+func (p *parser) parseCommands() []command {
+	res := make([]command, 0, 128)
 	p.eatSpace()
 	for p.ch != -1 {
 		if p.ch == '#' {
@@ -327,7 +327,7 @@ Loop:
 	return res
 }
 
-func (p *parser) parseCommand() Command {
+func (p *parser) parseCommand() command {
 	res := make([]tclTok, 0, 16)
 	res = append(res, p.parseToken())
 	p.eatWhile(issepspace)
@@ -369,7 +369,7 @@ func parseListInner(in io.RuneReader) (items []string, err error) {
 	return
 }
 
-func parseCommands(in io.RuneReader) (cmds []Command, err error) {
+func parseCommands(in io.RuneReader) (cmds []command, err error) {
 	p := newParser(in)
 	defer setError(&err)
 	cmds = p.parseCommands()

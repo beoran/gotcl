@@ -48,7 +48,7 @@ func (l *tliteral) Eval(i *Interp) TclStatus {
 // [w1 w2...]
 type subcommand struct {
 	notExpand
-	cmd Command
+	cmd command
 }
 
 func (s *subcommand) String() string { return "[" + s.cmd.String() + "]" }
@@ -204,7 +204,8 @@ type simpleCall struct {
 	args    []*TclObj
 }
 
-type Command struct {
+// w1 w2...
+type command struct {
 	words     []tclTok
 	no_expand bool
 	simple    *simpleCall
@@ -218,7 +219,7 @@ type simpleTok interface {
 	AsTclObj() *TclObj
 }
 
-func makeCommand(words []tclTok) Command {
+func makeCommand(words []tclTok) command {
 	all_simpletok := true
 	has_expand := false
 	var simple *simpleCall
@@ -238,10 +239,10 @@ func makeCommand(words []tclTok) Command {
 		}
 		simple = &simpleCall{cmdname: args[0].AsString(), args: args[1:]}
 	}
-	return Command{words: words, simple: simple, no_expand: !has_expand}
+	return command{words: words, simple: simple, no_expand: !has_expand}
 }
 
-func (c *Command) String() string {
+func (c *command) String() string {
 	result := ""
 	first := true
 	for _, w := range c.words {
@@ -321,7 +322,7 @@ type TclObj struct {
 	intval     int
 	has_intval bool
 	listval    []*TclObj
-	cmdsval    []Command
+	cmdsval    []command
 	vrefval    *varRef
 	exprval    eterm
 }
@@ -368,7 +369,7 @@ func (t *TclObj) AsInt() (int, error) {
 	return t.intval, nil
 }
 
-func (t *TclObj) asCmds() ([]Command, error) {
+func (t *TclObj) asCmds() ([]command, error) {
 	if t.cmdsval == nil {
 		c, e := parseCommands(strings.NewReader(t.AsString()))
 		if e != nil {
@@ -580,7 +581,7 @@ func (i *Interp) SetCmd(name string, cmd TclCmd) {
 	}
 }
 
-func (i *Interp) evalCmds(cmds []Command) TclStatus {
+func (i *Interp) evalCmds(cmds []command) TclStatus {
 	res := kTclOK
 	for ind := 0; ind < len(cmds) && res == kTclOK; ind++ {
 		res = cmds[ind].eval(i)
@@ -726,7 +727,7 @@ func evalArgs(i *Interp, toks []tclTok, no_expand bool) ([]*TclObj, TclStatus) {
 
 func (i *Interp) ClearError() { i.err = nil }
 
-func (cmd Command) eval(i *Interp) TclStatus {
+func (cmd command) eval(i *Interp) TclStatus {
 	i.cmdcount++
 	if len(cmd.words) == 0 {
 		return i.Return(kNil)
