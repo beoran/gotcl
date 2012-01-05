@@ -27,7 +27,7 @@ func TestListParse(t *testing.T) {
 }
 
 func verifyParse(t *testing.T, code string) {
-	_, e := ParseCommands(strings.NewReader(code))
+	_, e := parseCommands(strings.NewReader(code))
 	if e != nil {
 		t.Fatalf("%v should parse, but got %#v", code, e.Error())
 	}
@@ -44,7 +44,7 @@ func TestCommandParsing(t *testing.T) {
 }
 
 func TestCloseBraceExtra(t *testing.T) {
-	_, e := ParseCommands(strings.NewReader("if { 1 == 1 }{ puts oh }"))
+	_, e := parseCommands(strings.NewReader("if { 1 == 1 }{ puts oh }"))
 	if e == nil {
 		t.Errorf("Expected error, didn't get one.")
 	}
@@ -141,7 +141,7 @@ func BenchmarkParsing(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		reader := bytes.NewBuffer(data)
-		_, e := ParseCommands(reader)
+		_, e := parseCommands(reader)
 		if e != nil {
 			panic(e)
 		}
@@ -158,7 +158,7 @@ func BenchmarkListParsing(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		reader := bytes.NewBuffer(data)
-		_, e := ParseList(reader)
+		_, e := parseListInner(reader)
 		if e != nil {
 			panic(e)
 		}

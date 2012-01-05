@@ -81,7 +81,7 @@ func (b *block) Eval(i *Interp) TclStatus {
 
 // {*}{...}
 type expandTok struct {
-	subject TclTok
+	subject tclTok
 }
 
 func (e *expandTok) isExpand() bool {
@@ -162,11 +162,11 @@ type varRef struct {
 	notExpand
 	is_global bool
 	name      string
-	arrind    TclTok
+	arrind    tclTok
 }
 
 func (v varRef) Eval(i *Interp) TclStatus {
-	x, e := i.GetVar(v)
+	x, e := i.getVar(v)
 	if e != nil {
 		return i.Fail(e)
 	}
@@ -204,9 +204,8 @@ type simpleCall struct {
 	args    []*TclObj
 }
 
-// w1 w2...
 type Command struct {
-	words     []TclTok
+	words     []tclTok
 	no_expand bool
 	simple    *simpleCall
 }
@@ -219,7 +218,7 @@ type simpleTok interface {
 	AsTclObj() *TclObj
 }
 
-func makeCommand(words []TclTok) Command {
+func makeCommand(words []tclTok) Command {
 	all_simpletok := true
 	has_expand := false
 	var simple *simpleCall
@@ -256,7 +255,7 @@ func (c *Command) String() string {
 	return result
 }
 
-type TclTok interface {
+type tclTok interface {
 	String() string
 	Eval(i *Interp) TclStatus
 	isExpand() bool
@@ -283,15 +282,15 @@ type varEntry struct {
 	arrdata map[string]*TclObj
 }
 
-type VarMap map[string]*varEntry
+type varMap map[string]*varEntry
 
 type stackframe struct {
-	vars VarMap
+	vars varMap
 	next *stackframe
 }
 
 func newstackframe(tail *stackframe) *stackframe {
-	return &stackframe{make(VarMap), tail}
+	return &stackframe{make(varMap), tail}
 }
 
 type Interp struct {
@@ -369,9 +368,9 @@ func (t *TclObj) AsInt() (int, error) {
 	return t.intval, nil
 }
 
-func (t *TclObj) AsCmds() ([]Command, error) {
+func (t *TclObj) asCmds() ([]Command, error) {
 	if t.cmdsval == nil {
-		c, e := ParseCommands(strings.NewReader(t.AsString()))
+		c, e := parseCommands(strings.NewReader(t.AsString()))
 		if e != nil {
 			return nil, e
 		}
@@ -389,7 +388,7 @@ func (t *TclObj) AsBool() bool {
 	return iv != 0
 }
 
-func (t *TclObj) AsVarRef() varRef {
+func (t *TclObj) asVarRef() varRef {
 	if t.vrefval == nil {
 		vr := toVarRef(t.AsString())
 		t.vrefval = &vr
@@ -461,7 +460,7 @@ func (t *TclObj) asExpr() (eterm, error) {
 }
 
 func parseList(txt string) ([]*TclObj, error) {
-	lst, err := ParseList(strings.NewReader(txt))
+	lst, err := parseListInner(strings.NewReader(txt))
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +472,7 @@ func parseList(txt string) ([]*TclObj, error) {
 }
 
 func (i *Interp) EvalObj(obj *TclObj) TclStatus {
-	cmds, e := obj.AsCmds()
+	cmds, e := obj.asCmds()
 	if e != nil {
 		return i.Fail(e)
 	}
@@ -491,15 +490,15 @@ func (i *Interp) bindArgs(vnames []argsig, args []*TclObj) error {
 	for ix, vn := range vnames {
 		vr.name = vn.name
 		if ix == lastind && vn.name == "args" {
-			i.SetVar(vr, fromList(args[ix:]))
+			i.setVar(vr, fromList(args[ix:]))
 			return nil
 		} else if ix >= len(args) {
 			if vn.def == nil {
 				return errors.New("arg count mismatch")
 			}
-			i.SetVar(vr, vn.def)
+			i.setVar(vr, vn.def)
 		} else {
-			i.SetVar(vr, args[ix])
+			i.setVar(vr, args[ix])
 		}
 	}
 	return nil
@@ -519,7 +518,7 @@ func makeArgSigs(sig []*TclObj) []argsig {
 }
 
 func makeProc(sig []*TclObj, body *TclObj) TclCmd {
-	cmds, ce := body.AsCmds()
+	cmds, ce := body.asCmds()
 	if ce != nil {
 		return func(i *Interp, args []*TclObj) TclStatus { return i.Fail(ce) }
 	}
@@ -589,7 +588,7 @@ func (i *Interp) evalCmds(cmds []Command) TclStatus {
 	return res
 }
 
-func (i *Interp) getVarMap(global bool) VarMap {
+func (i *Interp) getVarMap(global bool) varMap {
 	f := i.frame
 	if global {
 		for f.next != nil {
@@ -610,10 +609,10 @@ func (i *Interp) LinkVar(level int, theirs, mine string) {
 }
 
 func (i *Interp) SetVarRaw(name string, val *TclObj) {
-	i.SetVar(toVarRef(name), val)
+	i.setVar(toVarRef(name), val)
 }
 
-func (i *Interp) SetVar(vr varRef, val *TclObj) TclStatus {
+func (i *Interp) setVar(vr varRef, val *TclObj) TclStatus {
 	m := i.getVarMap(vr.is_global)
 	if val == nil {
 		delete(m, vr.name)
@@ -652,7 +651,7 @@ func (i *Interp) SetVar(vr varRef, val *TclObj) TclStatus {
 }
 
 func (i *Interp) GetVarRaw(name string) (*TclObj, error) {
-	return i.GetVar(toVarRef(name))
+	return i.getVar(toVarRef(name))
 }
 
 func (i *Interp) getArray(vr varRef) (*varEntry, error) {
@@ -672,7 +671,7 @@ func (i *Interp) getArray(vr varRef) (*varEntry, error) {
 	return v, nil
 }
 
-func (i *Interp) GetVar(vr varRef) (*TclObj, error) {
+func (i *Interp) getVar(vr varRef) (*TclObj, error) {
 	v, ok := i.getVarMap(vr.is_global)[vr.name]
 	if !ok {
 		return nil, errors.New("variable not found: " + vr.String())
@@ -703,7 +702,7 @@ func (i *Interp) GetVar(vr varRef) (*TclObj, error) {
 	return v.obj, nil
 }
 
-func evalArgs(i *Interp, toks []TclTok, no_expand bool) ([]*TclObj, TclStatus) {
+func evalArgs(i *Interp, toks []tclTok, no_expand bool) ([]*TclObj, TclStatus) {
 	res := make([]*TclObj, 0, len(toks))
 	rc := kTclOK
 	for _, t := range toks {
@@ -756,7 +755,7 @@ func (i *Interp) EvalString(s string) (*TclObj, error) {
 }
 
 func (i *Interp) Run(in io.Reader) (*TclObj, error) {
-	cmds, e := ParseCommands(bufio.NewReader(in))
+	cmds, e := parseCommands(bufio.NewReader(in))
 	if e != nil {
 		return nil, e
 	}

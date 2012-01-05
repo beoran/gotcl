@@ -107,14 +107,14 @@ func tclForChan(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 3 {
 		return i.FailStr("wrong # args")
 	}
-	vname := args[0].AsVarRef()
+	vname := args[0].asVarRef()
 	name := args[1].AsString()
 	ch := getchan(name)
 	if ch == nil {
 		return i.FailStr("not a chan: " + name)
 	}
 	for v := range ch {
-		i.SetVar(vname, v)
+		i.setVar(vname, v)
 		rc := i.EvalObj(args[2])
 		if rc == kTclBreak {
 			break

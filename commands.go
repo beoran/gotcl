@@ -18,9 +18,9 @@ func tclSet(i *Interp, args []*TclObj) TclStatus {
 	}
 	if len(args) == 2 {
 		val := args[1]
-		return i.SetVar(args[0].AsVarRef(), val)
+		return i.setVar(args[0].asVarRef(), val)
 	}
-	v, e := i.GetVar(args[0].AsVarRef())
+	v, e := i.getVar(args[0].asVarRef())
 	if e != nil {
 		return i.Fail(e)
 	}
@@ -31,7 +31,7 @@ func tclUnset(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
 		return i.FailStr("wrong # args")
 	}
-	i.SetVar(args[0].AsVarRef(), nil)
+	i.setVar(args[0].asVarRef(), nil)
 	return kTclOK
 }
 
@@ -96,8 +96,8 @@ func tclIncr(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 && len(args) != 2 {
 		return i.FailStr("wrong # args")
 	}
-	vn := args[0].AsVarRef()
-	v, ve := i.GetVar(vn)
+	vn := args[0].asVarRef()
+	v, ve := i.getVar(vn)
 	if ve != nil {
 		return i.Fail(ve)
 	}
@@ -114,7 +114,7 @@ func tclIncr(i *Interp, args []*TclObj) TclStatus {
 	if err != nil {
 		return i.Fail(err)
 	}
-	return i.SetVar(vn, FromInt(iv+inc))
+	return i.setVar(vn, FromInt(iv+inc))
 }
 
 func tclReturn(i *Interp, args []*TclObj) TclStatus {
@@ -154,7 +154,7 @@ func tclCatch(i *Interp, args []*TclObj) TclStatus {
 		} else if r == kTclOK {
 			val = i.retval
 		}
-		i.SetVar(args[1].AsVarRef(), val)
+		i.setVar(args[1].asVarRef(), val)
 	}
 	i.ClearError()
 	return i.Return(FromInt(int(r)))
@@ -301,7 +301,7 @@ func tclForeach(i *Interp, args []*TclObj) TclStatus {
 	}
 	for len(list) > 0 {
 		for ind, vn := range vlist {
-			i.SetVar(vn.AsVarRef(), list[ind])
+			i.setVar(vn.asVarRef(), list[ind])
 		}
 		list = list[chunksz:]
 		rc := i.EvalObj(body)
@@ -488,8 +488,8 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 	if len(args) == 0 {
 		return i.FailStr("wrong # args")
 	}
-	vname := args[0].AsVarRef()
-	v, ve := i.GetVar(vname)
+	vname := args[0].asVarRef()
+	v, ve := i.getVar(vname)
 	if ve != nil {
 		v = fromList(make([]*TclObj, 0, 10))
 	}
@@ -502,7 +502,7 @@ func tclLappend(i *Interp, args []*TclObj) TclStatus {
 	dest := make([]*TclObj, 0, new_len)
 	dest = append(append(dest, items...), new_items...)
 	newobj := fromList(dest)
-	i.SetVar(vname, newobj)
+	i.setVar(vname, newobj)
 	return i.Return(newobj)
 }
 
@@ -616,7 +616,7 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 		str = str[:len(str)-1]
 	}
 	if len(args) == 2 {
-		i.SetVar(args[1].AsVarRef(), FromStr(str))
+		i.setVar(args[1].asVarRef(), FromStr(str))
 		retval := len(str)
 		if eof {
 			retval = -1
@@ -626,7 +626,7 @@ func tclGets(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(FromStr(str))
 }
 
-func getVarNameList(m VarMap) *TclObj {
+func getVarNameList(m varMap) *TclObj {
 	results := make([]*TclObj, len(m))
 	ind := 0
 	for vn := range m {
@@ -654,8 +654,8 @@ func varExists(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
 		return i.FailStr("wrong # args")
 	}
-	vn := args[0].AsVarRef()
-	_, err := i.GetVar(vn)
+	vn := args[0].asVarRef()
+	_, err := i.getVar(vn)
 	if err != nil {
 		_, err = i.getArray(vn)
 		if err != nil || vn.arrind != nil {
@@ -721,7 +721,7 @@ var arrayEn = ensembleSpec{
 		if len(args) != 1 {
 			return i.FailStr("wrong # args")
 		}
-		_, e := i.getArray(args[0].AsVarRef())
+		_, e := i.getArray(args[0].asVarRef())
 		return i.Return(FromBool(e == nil))
 	},
 }
@@ -730,7 +730,7 @@ func arraySize(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
 		return i.FailStr("wrong # args")
 	}
-	arr, e := i.getArray(args[0].AsVarRef())
+	arr, e := i.getArray(args[0].asVarRef())
 	if e != nil {
 		return i.Fail(e)
 	}
@@ -741,7 +741,7 @@ func arrayGet(i *Interp, args []*TclObj) TclStatus {
 	if len(args) != 1 {
 		return i.FailStr("wrong # args")
 	}
-	arr, e := i.getArray(args[0].AsVarRef())
+	arr, e := i.getArray(args[0].asVarRef())
 	if e != nil {
 		return i.Fail(e)
 	}
@@ -763,13 +763,13 @@ func arraySet(it *Interp, args []*TclObj) TclStatus {
 	if e != nil {
 		return it.Fail(e)
 	}
-	vn := args[0].AsVarRef()
+	vn := args[0].asVarRef()
 	if len(items)&1 != 0 {
 		return it.FailStr("list must have even number of elements")
 	}
 	for i := 0; i < len(items)-1; i++ {
 		vn.arrind = &tliteral{strval: items[i].AsString()}
-		it.SetVar(vn, items[i+1])
+		it.setVar(vn, items[i+1])
 	}
 	return it.Return(kNil)
 }
@@ -784,7 +784,7 @@ func tclSource(i *Interp, args []*TclObj) TclStatus {
 		return i.Fail(e)
 	}
 	defer file.Close()
-	cmds, pe := ParseCommands(bufio.NewReader(file))
+	cmds, pe := parseCommands(bufio.NewReader(file))
 	if pe != nil {
 		return i.Fail(pe)
 	}

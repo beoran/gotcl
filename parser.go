@@ -119,7 +119,7 @@ func (p *parser) parseSimpleWordTil(til rune) *tliteral {
 
 func (p *parser) parseSubcommand() *subcommand {
 	p.consumeRune('[')
-	res := make([]TclTok, 0, 16)
+	res := make([]tclTok, 0, 16)
 	p.eatWhile(issepspace)
 	for p.ch != ']' {
 		res = append(res, p.parseToken())
@@ -169,7 +169,7 @@ func (p *parser) parseBlock() *block {
 	return &block{strval: bd}
 }
 
-func (p *parser) parseBlockOrExpand() TclTok {
+func (p *parser) parseBlockOrExpand() tclTok {
 	bd := p.parseBlockData()
 	if bd == "*" && p.hasExtraChars() {
 		return &expandTok{p.parseToken()}
@@ -194,7 +194,7 @@ func (p *parser) parseVarRef() varRef {
 		global = true
 	}
 	name := p.consumeWhile1(isvarword, "variable name")
-	var ind TclTok
+	var ind tclTok
 	if p.ch == '(' {
 		p.advance()
 		ind = p.parseTokenTil(')')
@@ -328,7 +328,7 @@ Loop:
 }
 
 func (p *parser) parseCommand() Command {
-	res := make([]TclTok, 0, 16)
+	res := make([]tclTok, 0, 16)
 	res = append(res, p.parseToken())
 	p.eatWhile(issepspace)
 	for !isEol(p.ch) {
@@ -338,11 +338,11 @@ func (p *parser) parseCommand() Command {
 	return makeCommand(res)
 }
 
-func (p *parser) parseToken() TclTok {
+func (p *parser) parseToken() tclTok {
 	return p.parseTokenTil(-1)
 }
 
-func (p *parser) parseTokenTil(til rune) TclTok {
+func (p *parser) parseTokenTil(til rune) tclTok {
 	switch p.ch {
 	case '[':
 		return p.parseSubcommand()
@@ -362,14 +362,14 @@ func setError(err *error) {
 	}
 }
 
-func ParseList(in io.RuneReader) (items []string, err error) {
+func parseListInner(in io.RuneReader) (items []string, err error) {
 	p := newParser(in)
 	defer setError(&err)
 	items = p.parseList()
 	return
 }
 
-func ParseCommands(in io.RuneReader) (cmds []Command, err error) {
+func parseCommands(in io.RuneReader) (cmds []Command, err error) {
 	p := newParser(in)
 	defer setError(&err)
 	cmds = p.parseCommands()
