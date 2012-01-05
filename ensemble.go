@@ -1,9 +1,9 @@
 package gotcl
 
 import (
-	"strings"
-	"sort"
 	"fmt"
+	"sort"
+	"strings"
 )
 
 func formatNames(sv []string) string {

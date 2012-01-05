@@ -5,7 +5,6 @@ import (
 	"sync"
 )
 
-
 var tclChans = make(map[string]chan *TclObj)
 
 var channames = make(chan string)
@@ -90,7 +89,6 @@ func tclSendChan(i *Interp, args []*TclObj) TclStatus {
 	return i.Return(kNil)
 }
 
-
 func tclGo(i *Interp, args []*TclObj) TclStatus {
 	ni := new(Interp)
 	ni.cmds = i.cmds
@@ -99,7 +97,7 @@ func tclGo(i *Interp, args []*TclObj) TclStatus {
 	go func() {
 		tclEval(ni, args)
 		if ni.err != nil {
-			fmt.Println(ni.err.String())
+			fmt.Println(ni.err.Error())
 		}
 	}()
 	return i.Return(kNil)

@@ -1,10 +1,10 @@
 package gotcl
 
 import (
-	"testing"
+	"io"
 	"os"
 	"strings"
-	"io"
+	"testing"
 )
 
 func TestFull(t *testing.T) {
@@ -22,7 +22,7 @@ func RunString(it *Interp, s string) {
 	var r io.Reader = strings.NewReader(s)
 	_, e := it.Run(r)
 	if e != nil {
-		panic(e.String())
+		panic(e)
 	}
 }
 
@@ -33,7 +33,7 @@ func runCmd(setup, cmd string, b *testing.B) {
 	v := FromStr(cmd)
 	it.EvalObj(v)
 	if it.err != nil {
-		panic(it.err.String())
+		panic(it.err)
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -85,7 +85,6 @@ proc fib2 {n} {
 `
 	runCmd(fib2, "fib2 70", b)
 }
-
 
 func BenchmarkSumTo(b *testing.B) {
 	sumto := `

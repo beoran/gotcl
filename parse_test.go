@@ -1,9 +1,9 @@
 package gotcl
 
 import (
-	"io"
 	"bufio"
 	"bytes"
+	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -13,7 +13,7 @@ func TestListParse(t *testing.T) {
 	s := FromStr("{x}")
 	ll, e := s.AsList()
 	if e != nil {
-		t.Fatal(e.String())
+		t.Fatal(e)
 	}
 	if len(ll) != 1 {
 		t.Fatalf("len({x}) should be 1, was %#v", ll)
@@ -29,7 +29,7 @@ func TestListParse(t *testing.T) {
 func verifyParse(t *testing.T, code string) {
 	_, e := ParseCommands(strings.NewReader(code))
 	if e != nil {
-		t.Fatalf("%v should parse, but got %#v", code, e.String())
+		t.Fatalf("%v should parse, but got %#v", code, e.Error())
 	}
 }
 
@@ -135,7 +135,7 @@ func BenchmarkParsing(b *testing.B) {
 	b.StopTimer()
 	data, err := ioutil.ReadFile("parsebench.tcl")
 	if err != nil {
-		panic(err.String())
+		panic(err)
 	}
 	b.SetBytes(int64(len(data)))
 	b.StartTimer()
@@ -143,7 +143,7 @@ func BenchmarkParsing(b *testing.B) {
 		reader := bytes.NewBuffer(data)
 		_, e := ParseCommands(reader)
 		if e != nil {
-			panic(e.String())
+			panic(e)
 		}
 	}
 }
@@ -152,7 +152,7 @@ func BenchmarkListParsing(b *testing.B) {
 	b.StopTimer()
 	data, err := ioutil.ReadFile("parsebench.tcl")
 	if err != nil {
-		panic(err.String())
+		panic(err)
 	}
 	b.SetBytes(int64(len(data)))
 	b.StartTimer()
@@ -160,7 +160,7 @@ func BenchmarkListParsing(b *testing.B) {
 		reader := bytes.NewBuffer(data)
 		_, e := ParseList(reader)
 		if e != nil {
-			panic(e.String())
+			panic(e)
 		}
 	}
 }
@@ -172,7 +172,7 @@ func BenchmarkNoopParse(b *testing.B) {
 	b.StopTimer()
 	data, err := ioutil.ReadFile("parsebench.tcl")
 	if err != nil {
-		panic(err.String())
+		panic(err)
 	}
 	b.SetBytes(int64(len(data)))
 	b.StartTimer()

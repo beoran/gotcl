@@ -1,16 +1,16 @@
 package gotcl
 
 import (
-	"io"
-	"os"
 	"bytes"
+	"errors"
+	"io"
 	"unicode"
 )
 
 type parser struct {
 	data   io.RuneReader
 	tmpbuf *bytes.Buffer
-	ch     int
+	ch     rune
 }
 
 func newParser(input io.RuneReader) *parser {
@@ -19,24 +19,24 @@ func newParser(input io.RuneReader) *parser {
 	return p
 }
 
-func issepspace(c int) bool { return c == '\t' || c == ' ' }
-func isvarword(c int) bool {
+func issepspace(c rune) bool { return c == '\t' || c == ' ' }
+func isvarword(c rune) bool {
 	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
 }
 
 func (p *parser) fail(s string) {
-	panic(os.NewError(s))
+	panic(errors.New(s))
 }
 
-func (p *parser) advance() (result int) {
+func (p *parser) advance() (result rune) {
 	if p.ch == -1 {
 		p.fail("unexpected EOF")
 	}
 	result = p.ch
 	r, _, e := p.data.ReadRune()
 	if e != nil {
-		if e != os.EOF {
-			p.fail(e.String())
+		if e != io.EOF {
+			p.fail(e.Error())
 		}
 		p.ch = -1
 	} else {
@@ -45,7 +45,7 @@ func (p *parser) advance() (result int) {
 	return
 }
 
-func (p *parser) consumeWhile1(fn func(int) bool, desc string) string {
+func (p *parser) consumeWhile1(fn func(rune) bool, desc string) string {
 	p.tmpbuf.Reset()
 	for p.ch != -1 && fn(p.ch) {
 		p.tmpbuf.WriteRune(p.advance())
@@ -57,7 +57,7 @@ func (p *parser) consumeWhile1(fn func(int) bool, desc string) string {
 	return res
 }
 
-func (p *parser) expectFailed(expected string, ch int) {
+func (p *parser) expectFailed(expected string, ch rune) {
 	got := "EOF"
 	if ch != -1 {
 		got = string(ch)
@@ -65,9 +65,9 @@ func (p *parser) expectFailed(expected string, ch int) {
 	p.fail("Expected " + expected + ", got '" + got + "'")
 }
 
-func (p *parser) consumeRune(rune int) {
-	if p.ch != rune {
-		p.expectFailed("'"+string(rune)+"'", p.ch)
+func (p *parser) consumeRune(r rune) {
+	if p.ch != r {
+		p.expectFailed("'"+string(r)+"'", p.ch)
 	}
 	p.advance()
 }
@@ -78,20 +78,20 @@ func (p *parser) eatSpace() {
 	}
 }
 
-func (p *parser) eatWhile(fn func(int) bool) {
+func (p *parser) eatWhile(fn func(rune) bool) {
 	for p.ch != -1 && fn(p.ch) {
 		p.advance()
 	}
 }
 
-func isword(c int) bool {
+func isword(c rune) bool {
 	switch c {
 	case '[', ']', ';', '$', '"':
 		return false
 	}
 	return !unicode.IsSpace(c)
 }
-func (p *parser) parseSimpleWordTil(til int) *tliteral {
+func (p *parser) parseSimpleWordTil(til rune) *tliteral {
 	p.tmpbuf.Reset()
 	prev_esc := false
 	for p.ch != -1 && p.ch != til {
@@ -203,10 +203,10 @@ func (p *parser) parseVarRef() varRef {
 	return varRef{is_global: global, name: name, arrind: ind}
 }
 
-var escMap = map[int]string{
+var escMap = map[rune]string{
 	'n': "\n", 't': "\t", 'a': "\a", 'v': "\v", 'r': "\r"}
 
-func escaped(r int) string {
+func escaped(r rune) string {
 	if v, ok := escMap[r]; ok {
 		return v
 	}
@@ -272,7 +272,7 @@ func (p *parser) parseStringLit() strlit {
 	panic("unreachable")
 }
 
-func isEol(ch int) bool {
+func isEol(ch rune) bool {
 	switch ch {
 	case -1, ';', '\n':
 		return true
@@ -290,7 +290,7 @@ func (p *parser) eatExtra() {
 
 func (p *parser) parseComment() {
 	p.consumeRune('#')
-	p.eatWhile(func(c int) bool { return c != '\n' })
+	p.eatWhile(func(c rune) bool { return c != '\n' })
 }
 
 func (p *parser) parseCommands() []Command {
@@ -307,7 +307,7 @@ func (p *parser) parseCommands() []Command {
 	return res
 }
 
-func notspace(c int) bool { return !unicode.IsSpace(c) }
+func notspace(c rune) bool { return !unicode.IsSpace(c) }
 func (p *parser) parseList() []string {
 	res := make([]string, 0, 8)
 Loop:
@@ -342,7 +342,7 @@ func (p *parser) parseToken() TclTok {
 	return p.parseTokenTil(-1)
 }
 
-func (p *parser) parseTokenTil(til int) TclTok {
+func (p *parser) parseTokenTil(til rune) TclTok {
 	switch p.ch {
 	case '[':
 		return p.parseSubcommand()
@@ -356,20 +356,20 @@ func (p *parser) parseTokenTil(til int) TclTok {
 	return p.parseSimpleWordTil(til)
 }
 
-func setError(err *os.Error) {
+func setError(err *error) {
 	if e := recover(); e != nil {
-		*err = e.(os.Error)
+		*err = e.(error)
 	}
 }
 
-func ParseList(in io.RuneReader) (items []string, err os.Error) {
+func ParseList(in io.RuneReader) (items []string, err error) {
 	p := newParser(in)
 	defer setError(&err)
 	items = p.parseList()
 	return
 }
 
-func ParseCommands(in io.RuneReader) (cmds []Command, err os.Error) {
+func ParseCommands(in io.RuneReader) (cmds []Command, err error) {
 	p := newParser(in)
 	defer setError(&err)
 	cmds = p.parseCommands()

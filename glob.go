@@ -1,8 +1,8 @@
 package gotcl
 
-import "utf8"
+import "unicode/utf8"
 
-func uncons(s string) (int, string) {
+func uncons(s string) (rune, string) {
 	head, sz := utf8.DecodeRuneInString(s)
 	if head == utf8.RuneError {
 		return head, ""
@@ -22,7 +22,7 @@ func matchcharset(pat, strin string) (bool, string, string) {
 			if sh == ph {
 				got_match = true
 			} else if rh, rt := uncons(rest); rh == '-' {
-				var ph2 int
+				var ph2 rune
 				ph2, rest = uncons(rt)
 				if ph2 == utf8.RuneError {
 					return false, "", ""
@@ -70,7 +70,7 @@ func GlobMatch(pat, str string) bool {
 				}
 				ph, rest = uncons(rest)
 			}
-			var sh int
+			var sh rune
 			sh, str = uncons(str)
 			if sh != ph {
 				return false
