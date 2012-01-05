@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
-	"gotcl"
 	"flag"
 	"fmt"
+	"gotcl"
 	"io"
 	"os"
 	"runtime"
@@ -12,14 +12,14 @@ import (
 
 var nogc = flag.Bool("nogc", false, "if true, gc is disabled")
 
-func RunRepl(in io.Reader, out io.Writer, fn func(string) (string, os.Error)) {
+func RunRepl(in io.Reader, out io.Writer, fn func(string) (string, error)) {
 	inbuf := bufio.NewReader(in)
 	for {
 		fmt.Fprint(out, "> ")
 		ln, err := inbuf.ReadString('\n')
 		if err != nil {
-			if err != os.EOF {
-				fmt.Fprintln(out, err.String())
+			if err != io.EOF {
+				fmt.Fprintln(out, err.Error())
 			}
 			break
 		}
@@ -28,7 +28,7 @@ func RunRepl(in io.Reader, out io.Writer, fn func(string) (string, os.Error)) {
 		}
 		res, rerr := fn(ln)
 		if rerr != nil {
-			fmt.Fprintln(out, "Error: "+rerr.String())
+			fmt.Fprintln(out, "Error: "+rerr.Error())
 		} else {
 			if len(res) != 0 {
 				fmt.Fprintln(out, res)
@@ -40,7 +40,7 @@ func RunRepl(in io.Reader, out io.Writer, fn func(string) (string, os.Error)) {
 func RunTclRepl(in io.Reader, out io.Writer) {
 	i := gotcl.NewInterp()
 	setArgs(i, flag.Args(), true)
-	RunRepl(in, out, func(ln string) (string, os.Error) {
+	RunRepl(in, out, func(ln string) (string, error) {
 		res, e := i.EvalString(ln)
 		i.ClearError()
 		if e != nil {
@@ -67,19 +67,19 @@ func main() {
 		runtime.MemStats.EnableGC = false
 		println("GC disabled.")
 	}
-    args := flag.Args()
+	args := flag.Args()
 	if len(args) == 1 {
 		filename := args[0]
 		file, e := os.Open(filename)
 		if e != nil {
-			panic(e.String())
+			panic(e.Error())
 		}
 		defer file.Close()
 		i := gotcl.NewInterp()
 		setArgs(i, args, false)
 		_, err := i.Run(file)
 		if err != nil {
-			fmt.Println("Error: " + err.String())
+			fmt.Println("Error: " + err.Error())
 		}
 	} else {
 		RunTclRepl(os.Stdin, os.Stdout)
