@@ -760,14 +760,24 @@ func (i *Interp) Run(in io.Reader) (*TclObj, error) {
 		return nil, e
 	}
 	r := i.evalCmds(cmds)
-	if r == kTclOK {
+	if r == kTclOK || r == kTclReturn {
 		if i.retval == nil {
 			return kNil, nil
 		}
 		return i.retval, nil
 	}
-	if r != kTclOK && i.err == nil {
-		i.err = errors.New("uncaught error: " + strconv.Itoa(int(r)))
+	if i.err == nil {
+		var estr string
+		switch r {
+		case kTclBreak:
+			estr = `invoked "break" outside of a loop`
+		case kTclContinue:
+			estr = `invoked "continue" outside of a loop`
+		default:
+			estr = "uncaught error: " + strconv.Itoa(int(r))
+
+		}
+		i.err = errors.New(estr)
 	}
 	return nil, i.err
 }
